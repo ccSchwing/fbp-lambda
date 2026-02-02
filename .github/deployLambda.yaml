@@ -1,0 +1,33 @@
+name: Deploy FBP Lambda
+
+on: 
+    workflow_dispatch
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        permissions:
+            id-token: write     # OIDC auth
+            contents: read      # to checkout the repo
+        steps:
+            - uses: actions/checkout@v4
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                role-to-assume: arn:aws:iam::768286545465:role/GitHubActionsRole
+                aws-region: us-east-1
+            - name: Set up Python
+              uses: actions/setup-python@v4
+            - name: Install SAM AWSTemplateFormatVersion 2010-09-09
+              uses: aws-actions/setup-sam@v2
+            - name: Build Lambda Function
+              run: |
+                sam build --use-container
+            # - name: Deploy Lambda Function
+            #   run: |
+            #     sam deploy --no-confirm-changeset
+
+            - name: Deploy Lambda Function
+              uses: aws-actions/aws-lambda-deploy@v1
+              with:
+                function-name: HelloWorldFunction   # I guess this should match up with template.yaml
+                code-artifacts-dir: ./dist          # Path to your Lambda function code
