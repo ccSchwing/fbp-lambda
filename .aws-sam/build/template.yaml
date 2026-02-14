@@ -10,37 +10,20 @@ Globals:
     Timeout: 20
     MemorySize: 512
 Resources:
-  HelloWorldFunction:
+  CreateOrder:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: HelloWorldFunction
-      Handler: helloworld.CreateOrderLambda::createOrder
-      Runtime: java25
+      CodeUri: CreateOrder
+      Handler: com.fbp.CreateOrderLambda::createOrder
+      Runtime: java17
       Architectures:
       - x86_64
       MemorySize: 512
       Events:
-        HelloWorld:
+        CreateOrder:
           Type: Api
           Properties:
-            Path: /order
+            Path: /createOrder
             Method: POST
     Metadata:
-      SamResourceId: HelloWorldFunction
-Outputs:
-  HelloWorldApi:
-    Description: API Gateway endpoint URL for Prod stage for Hello World function
-    Value:
-      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/order/
-  HelloWorldFunction:
-    Description: Hello World Lambda Function ARN
-    Value:
-      Fn::GetAtt:
-      - HelloWorldFunction
-      - Arn
-  HelloWorldFunctionIamRole:
-    Description: Implicit IAM Role created for Hello World function
-    Value:
-      Fn::GetAtt:
-      - HelloWorldFunctionRole
-      - Arn
+      SamResourceId: CreateOrder

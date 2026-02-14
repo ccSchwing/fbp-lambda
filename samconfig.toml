@@ -16,10 +16,8 @@ lint = true
 [default.deploy.parameters]
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
-stack_name="scratch"
 s3_bucket="fbp-scratch"
 s3_prefix = "scratch"
-region = "us-east-1"
 image_repositories = []
 
 [default.package.parameters]
