@@ -1,36 +1,70 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  scratch
+  fbp-lambda
+  Sample SAM Template for fbp-lambda
 
-  Sample SAM Template for scratch
-
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
     Timeout: 20
     MemorySize: 512
+    Environment:
+      Variables:
+        FBP_USERS_TABLE_NAME: !Ref FBPUsersTableName  # Fixed: Added ! and corrected parameter name
+  Api:
+    Cors:
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+      AllowOrigin: "'https://my-fbp.com'"
+
+Parameters:
+  FBPUsersTableName:  # Fixed: Corrected spelling (was FBPusersTableName)
+    Type: String
+    Default: FBPUsers
 
 Resources:
-  CreateOrder:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  Resources:
+  FBPWebsiteBucket:
+    Type: AWS::S3::Bucket
     Properties:
-      CodeUri: CreateOrder
-      Handler: com.fbp.CreateOrderLambda::createOrder
+      BucketName: my-fbp.com  # Or whatever bucket name you're using
+      WebsiteConfiguration:
+        IndexDocument: signup.html
+        ErrorDocument: error.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  FBPWebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FBPWebsiteBucket
+      PolicyDocument:
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Sub '${FBPWebsiteBucket}/*'
+
+  AddFBPUser:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./AddFBPUser
+      Handler: com.fbp.AddFBPUser::createFBPUser
       Runtime: java17
       Architectures:
         - x86_64
-      MemorySize: 512
-      # Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
-      #   Variables:
-      #     PARAM1: VALUE
+      # Remove MemorySize here since it's in Globals
+      # Remove Environment here since it's in Globals
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FBPUsersTableName  # Use parameter reference
       Events:
-        CreateOrder:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+        AddFBPUser:
+          Type: Api
           Properties:
-            Path: /createOrder
+            Path: /addFBPUser
             Method: POST
-#  Replace CreateOrder with something like AddFBPUser
-#  Remember to add the appropriate IAM permissions
-#  
-#  Define your dynamo DB access here as another lambda function
