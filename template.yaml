@@ -8,10 +8,8 @@ Globals:
   Function:
     Timeout: 20
     MemorySize: 512
-    # Environment:
-    #   Variables:
-    #     FBP_USERS_TABLE_NAME: !Ref FBPUsersTableName  # Fixed: Added ! and corrected parameter name
   Api:
+    Name: fbpLambda
     Cors:
       AllowMethods: "'GET,POST,OPTIONS'"
       AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
@@ -40,7 +38,7 @@ Resources:
     Properties:
       CodeUri: ./AddFBPUser
       Handler: com.fbp.AddFBPUser::createFBPUser
-      Runtime: java17
+      Runtime: java11
       Architectures:
         - x86_64
       # Remove MemorySize here since it's in Globals

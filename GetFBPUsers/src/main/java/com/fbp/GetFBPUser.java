@@ -21,9 +21,9 @@ public class GetFBPUser {
         dynamoDB.scan(ScanRequest.builder()
                 .tableName(System.getenv("FBPUsers"))
                 .build());
-        List<SingleFBPUser> fbpUserList = scanResult
+        List<FBPUser> fbpUserList = scanResult
                 .items().stream()
-                .map((item) -> objectMapper.convertValue(item, SingleFBPUser.class))
+                .map((item) -> objectMapper.convertValue(item, FBPUser.class))
                 .collect(Collectors.toList());
         String JsonOutput = objectMapper.writeValueAsString(fbpUserList);
         return new APIGatewayProxyResponseEvent()
