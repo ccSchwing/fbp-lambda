@@ -1,5 +1,6 @@
 package com.fbp;
 
+import java.security.Key;
 import java.util.Map;
 
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
@@ -9,23 +10,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
-import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-public class GetFBPUsers {
-    public APIGatewayProxyResponseEvent getFBPUser(APIGatewayProxyRequestEvent request)
+public class LambdaGetMethod {
+    public APIGatewayProxyResponseEvent functionName(APIGatewayProxyRequestEvent request)
             throws JsonMappingException, Exception {
-        // ObjectMapper objectMapper = new ObjectMapper();
+        String tableName= System.getenv("FBPUsers");
+        String queryParam= request.getQueryStringParameters().get("Week");
         DynamoDbClient dynamoDB = DynamoDbClient.builder().build();
         DynamoDbEnhancedClient enhancedClient = DynamoDbEnhancedClient
                 .builder()
                 .dynamoDbClient(dynamoDB)
                 .build();
-        String tableName = System.getenv("FBPUsers");
-        DynamoDbTable<FBPUserBean> table = enhancedClient.table(tableName, TableSchema.fromBean(FBPUserBean.class));
-        String email = request.getQueryStringParameters().get("email");
-        FBPUserBean fbpUser=table.getItem(Key.builder().partitionValue(email).build());
+        DynamoDbTable<FBPPickSheet> table = enhancedClient.table(tableName, TableSchema.fromBean(FBPPickSheet.class));
+        String week = request.getQueryStringParameters().get(queryParam);
+        FBPPickSheet fbpUser=table.getItem(Key.builder().partitionValue(week).build());
         return new APIGatewayProxyResponseEvent()
                 .withStatusCode(200)
                     .withHeaders(Map.of(

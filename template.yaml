@@ -9,7 +9,6 @@ Globals:
     Timeout: 20
     MemorySize: 512
   Api:
-    Name: fbpLambda
     Cors:
       AllowMethods: "'GET,POST,OPTIONS'"
       AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
@@ -19,20 +18,11 @@ Parameters:
   FBPUsersTableName:  # Fixed: Corrected spelling (was FBPusersTableName)
     Type: String
     Default: FBPUsers
+  FBPScheduleTableName:  # Added parameter for schedule table
+    Type: String
+    Default: 2025-Schedule
 
 Resources:
-  FBPUsersTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Ref FBPUsersTableName
-      AttributeDefinitions:
-        - AttributeName: email
-          AttributeType: S
-      KeySchema:
-        - AttributeName: email
-          KeyType: HASH
-      BillingMode: PAY_PER_REQUEST
-
   AddFBPUser:
     Type: AWS::Serverless::Function
     Properties:
@@ -78,11 +68,30 @@ Resources:
             Properties:
               Path: /getFBPUser
               Method: GET
-Outputs:
-  FBPUsersTable:
-    Description: "FBP Users Table"
-    Value: !Ref FBPUsersTable
 
+  GetPickSheet:
+      Type: AWS::Serverless::Function
+      Properties:
+        CodeUri: ./GetPickSheet
+        Handler: com.fbp.GetPickSheet::getPickSheet
+        Runtime: java11
+        Architectures:
+          - x86_64
+      # Remove MemorySize here since it's in Globals
+      # Remove Environment here since it's in Globals
+        Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPScheduleTableName
+        Environment:
+          Variables:
+            FBPScheduleTableName: !Ref FBPScheduleTableName
+        Events:
+          GetFBPUser:
+            Type: Api
+            Properties:
+              Path: /getPicksForWeek
+              Method: GET  
+Outputs:
   AddFBPUserFunction:
     Description: "Add FBP User Lambda Function"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/addFBPUser"
@@ -101,4 +110,14 @@ Outputs:
   GetFPBUserFunctionRole:
     Description: "Get FBP User Lambda Function Role"
     Value: !GetAtt GetFBPUserRole.Arn
+  GetPickSheetFunction:
+    Description: "Get Pick Sheet Lambda Function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getPicksForWeek"
+  GetPickSheetFunctionARN:
+    Description: "Get Pick Sheet Lambda Function ARN"
+    Value: !GetAtt GetPickSheet.Arn
+  GetPickSheetFunctionRole:
+    Description: "Get Pick Sheet Lambda Function Role"
+    Value: !GetAtt GetPickSheetRole.Arn
+
 

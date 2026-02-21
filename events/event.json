@@ -1,5 +1,5 @@
 {
-  "id": 999,
-  "itemName": "Sample Event Item",
-  "quantity": 10
+  "queryStringParameters": {
+    "Week": "01"
+  }
 }
