@@ -13,6 +13,7 @@ public class FBPPickSheet {
     private String awayTeam;
     private String homeTeam;
     private String spread;
+    private String finalWithSpread;
 
     @DynamoDbPartitionKey
     @DynamoDbAttribute("Week")
@@ -32,6 +33,10 @@ public class FBPPickSheet {
     @DynamoDbAttribute("Home")
     public String getHomeTeam() { return homeTeam; }
     public void setHomeTeam(String homeTeam) { this.homeTeam = homeTeam; }
+
+    @DynamoDbAttribute("FinalWithSpread")
+    public String getFinalWithSpread() { return finalWithSpread; }
+    public void setFinalWithSpread(String finalWithSpread) { this.finalWithSpread = finalWithSpread; }
 
     @DynamoDbAttribute("Spread")
     public String getSpread() { return spread; }
