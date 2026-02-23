@@ -12,7 +12,8 @@ Globals:
     Cors:
       AllowMethods: "'GET,POST,OPTIONS'"
       AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-      AllowOrigin: "'https://my-fbp.com'"
+      # AllowOrigin: "'https://my-fbp.com'"
+      AllowOrigin: "'*'"
 
 Parameters:
   FBPUsersTableName:  # Fixed: Corrected spelling (was FBPusersTableName)
@@ -93,7 +94,7 @@ Resources:
             Type: Api
             Properties:
               Path: /getPickSheet
-              Method: GET  
+              Method: POST  
   GetScheduleSheet: 
       Type: AWS::Serverless::Function
       Properties:
