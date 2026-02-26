@@ -25,6 +25,9 @@ Parameters:
   FBPSpreadTableName:  # Added parameter for spread table
     Type: String
     Default: 2025-Spread
+  FBPConfigTableName:  # Added parameter for config table
+    Type: String
+    Default: FBPConfig
 
 Resources:
   AddFBPUser:
