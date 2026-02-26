@@ -8,18 +8,18 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 
 @DynamoDbBean
 public class FBPGridSheet {
-    private String week;
+    private double week;
     private String gameId;
     private String awayTeam;
     private String homeTeam;
     private String date;
-    private String spread;
-    private String finalWithSpread;
+    private double spread;
+    private double finalWithSpread;
 
     @DynamoDbPartitionKey
     @DynamoDbAttribute("Week")
-    public String getWeek() { return week; }
-    public void setWeek(String week) { this.week = week; }
+    public double getWeek() { return week; }
+    public void setWeek(double week) { this.week = week; }
 
     @DynamoDbSortKey
     @DynamoDbAttribute("GameId")
@@ -39,10 +39,10 @@ public class FBPGridSheet {
     public void setDate(String date) { this.date = date; }
 
     @DynamoDbAttribute("FinalWithSpread")
-    public String getFinalWithSpread() { return finalWithSpread; }
-    public void setFinalWithSpread(String finalWithSpread) { this.finalWithSpread = finalWithSpread; }
+    public double getFinalWithSpread() { return finalWithSpread; }
+    public void setFinalWithSpread(double finalWithSpread) { this.finalWithSpread = finalWithSpread; }
 
     @DynamoDbAttribute("Spread")
-    public String getSpread() { return spread; }
-    public void setSpread(String spread) { this.spread = spread; }
+    public double getSpread() { return spread; }
+    public void setSpread(double spread) { this.spread = spread; }
 }

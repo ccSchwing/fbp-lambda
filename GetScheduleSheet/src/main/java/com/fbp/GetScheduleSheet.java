@@ -62,7 +62,8 @@ public class GetScheduleSheet {
         DynamoDbTable<FBPGridSheet> table =
             enhancedClient.table(System.getenv("FBPScheduleTableName"), TableSchema.fromClass(FBPGridSheet.class));
         try {
-            List<FBPGridSheet> pickSheets = table.query(QueryConditional.keyEqualTo(Key.builder().partitionValue(week).build()))
+            System.out.println("Querying for schedule sheet for week: " + week);
+            List<FBPGridSheet> pickSheets = table.query(QueryConditional.keyEqualTo(Key.builder().partitionValue(Double.parseDouble(week)).build()))
                 .items()
                 .stream()
                 .collect(Collectors.toList());
