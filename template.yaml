@@ -27,7 +27,7 @@ Parameters:
     Default: 2025-Spread
   FBPConfigTableName:  # Added parameter for config table
     Type: String
-    Default: FBPConfig
+    Default: FBP-Config
 
 Resources:
   AddFBPUser:
@@ -111,9 +111,12 @@ Resources:
         Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref FBPScheduleTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPConfigTableName
         Environment:
           Variables:
             FBPScheduleTableName: !Ref FBPScheduleTableName
+            FBPConfigTableName: !Ref FBPConfigTableName
         Events:
           GetScheduleSheet:
             Type: Api

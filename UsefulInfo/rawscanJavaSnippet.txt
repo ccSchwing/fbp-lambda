@@ -1,0 +1,8 @@
+// See what's actually in DynamoDB
+ScanResponse rawResponse = rawClient.scan(scanRequest);
+for (Map<String, AttributeValue> item : rawResponse.items()) {
+    System.out.println("Raw item: " + item);
+}
+
+// Then try enhanced client
+// If objects come back null, you know it's a mapping issue
