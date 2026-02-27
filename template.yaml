@@ -88,16 +88,19 @@ Resources:
       # Remove Environment here since it's in Globals
         Policies:
         - DynamoDBReadPolicy:
-            TableName: !Ref FBPSpreadTableName
+            TableName: !Ref FBPScheduleTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPConfigTableName
         Environment:
           Variables:
-            FBPSpreadTableName: !Ref FBPSpreadTableName
+            FBPScheduleTableName: !Ref FBPScheduleTableName
+            FBPConfigTableName: !Ref FBPConfigTableName
         Events:
           GetPickSheet:
             Type: Api
             Properties:
               Path: /getPickSheet
-              Method: POST  
+              Method: GET
   GetScheduleSheet: 
       Type: AWS::Serverless::Function
       Properties:

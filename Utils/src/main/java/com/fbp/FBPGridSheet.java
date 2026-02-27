@@ -15,6 +15,7 @@ public class FBPGridSheet {
     private String date;
     private double spread;
     private double finalWithSpread;
+    private String Underdog;
 
     @DynamoDbPartitionKey
     @DynamoDbAttribute("Week")
@@ -45,4 +46,8 @@ public class FBPGridSheet {
     @DynamoDbAttribute("Spread")
     public double getSpread() { return spread; }
     public void setSpread(double spread) { this.spread = spread; }
+
+    @DynamoDbAttribute("Underdog")
+    public String getUnderdog() { return Underdog; }
+    public void setUnderdog(String Underdog) { this.Underdog = Underdog; }
 }
