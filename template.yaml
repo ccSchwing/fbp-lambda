@@ -31,6 +31,9 @@ Parameters:
   FBPPicksTableName:  # Added parameter for picks table
     Type: String
     Default: FBP-Picks
+  FBPLogsTableName:  # Added parameter for logs table
+    Type: String
+    Default: 2025-Log
 
 Resources:
   AddFBPUser:
@@ -68,9 +71,12 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref FBPPicksTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FBPLogsTableName
       Environment:
         Variables:
           FBPPicksTableName: !Ref FBPPicksTableName
+          FBPLogsTableName: !Ref FBPLogsTableName
       Events:
         SaveFBPPicks:
           Type: Api
@@ -107,6 +113,9 @@ Resources:
         CodeUri: ./GetPickSheet
         Handler: com.fbp.GetPickSheet::getPickSheet
         Runtime: java11
+        AutoPublishAlias: live
+        SnapStart: 
+          ApplyOn: PublishedVersions
         Architectures:
           - x86_64
       # Remove MemorySize here since it's in Globals
