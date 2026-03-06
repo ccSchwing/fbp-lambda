@@ -15,36 +15,34 @@ import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 
 
 public class AddFBPUser {
-    public APIGatewayProxyResponseEvent createFBPUser(APIGatewayProxyRequestEvent request)
+    public APIGatewayProxyResponseEvent addFBPUser(APIGatewayProxyRequestEvent request)
         throws JsonMappingException, JsonProcessingException {
         try{ 
         ObjectMapper objectMapper = new ObjectMapper();
-        FBPUser fbpUser = objectMapper.readValue(request.getBody(), FBPUser.class);
+        FBPUserBean fbpUser = objectMapper.readValue(request.getBody(), FBPUserBean.class);
         DynamoDbClient dynamoDB = DynamoDbClient.builder().build();
 
-        String tableName = System.getenv("FBPUsers");
-        PutItemRequest putItemRequest =
+        String tableName = System.getenv("FBPUserTableName");
+
+         PutItemRequest putItemRequest =
             PutItemRequest.builder()
                 .tableName(tableName)
                 .item(java.util.Map.of(
+                    "email", AttributeValue.builder().s(fbpUser.getEmail()).build(),
                     "firstName", AttributeValue.builder().s(fbpUser.getFirstName()).build(),
                     "lastName", AttributeValue.builder().s(fbpUser.getLastName()).build(),
-                    "email", AttributeValue.builder().s(fbpUser.getEmail()).build(),
                     "displayName", AttributeValue.builder().s(fbpUser.getDisplayName()).build()
                 ))
                 .build();
         dynamoDB.putItem(putItemRequest);
-        System.out.println("User created: " + fbpUser.getDisplayName());
         System.out.println("Table Name from ENV: " + tableName);
-        String responseMessage = String.format("FBP User created: FirstName=%s, LastName=%s, Email=%s, DisplayName=%s",
-                    fbpUser.getFirstName(), fbpUser.getLastName(), fbpUser.getEmail(), fbpUser.getDisplayName());
         return new APIGatewayProxyResponseEvent().withStatusCode(200)
             .withHeaders(Map.of(
                 "Access-Control-Allow-Origin", "*",
                 "Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
                 "Access-Control-Allow-Methods", "POST,OPTIONS"
             ))
-            .withBody(responseMessage);
+            .withBody("Picks saved successfully");
         } catch (Exception e) {
             return new APIGatewayProxyResponseEvent().withStatusCode(500)
                 .withHeaders(Map.of(
