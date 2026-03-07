@@ -57,70 +57,28 @@ Resources:
   #           NoncurrentVersionExpirationInDays: 30
   #     # Lambda function
     # CloudWatch Log Group for S3 events
-  ContentBucketLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/s3/${AWS::StackName}-content"
-      RetentionInDays: 14
-  SaveContentFunction:
+  SaveContent:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-save-content"
-      CodeUri: ./StoreGridSheet
+      CodeUri: ./SaveContent
+      Handler: com.fbp.SaveContent::handleRequest
       Runtime: java11
       Architectures:
-        - x86_64
-      Handler: com.fbp.SaveContentHandler::handleRequest
-      Description: 'Securely saves browser content to S3'
+        - x86_64 
+      MemorySize: 512
+      Timeout: 30
       Environment:
         Variables:
-          BUCKET_NAME: myfbp.com
+          BUCKET_NAME: my-fbp.com
       Policies:
         - S3WritePolicy:
             BucketName: my-fbp.com
-        - Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action:
-                - logs:CreateLogGroup
-                - logs:CreateLogStream
-                - logs:PutLogEvents
-              Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
       Events:
         SaveContentApi:
           Type: Api
           Properties:
-            RestApiId: !Ref ContentSaverApi
             Path: /save-content
             Method: post
-        OptionsApi:
-          Type: Api
-          Properties:
-            RestApiId: !Ref ContentSaverApi
-            Path: /save-content
-            Method: options
-
-  ContentSaverApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: !Sub "${AWS::StackName}-api"
-      StageName: Prod
-      Variables:
-        StackName: !Ref AWS::StackName
-      Cors:
-        AllowOrigin: "'*'"
-        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-        AllowMethods: "'POST,OPTIONS'"
-        MaxAge: "'600'"
-      GatewayResponses:
-        DEFAULT_4XX:
-          ResponseParameters:
-            Headers:
-              Access-Control-Allow-Origin: "'*'"
-        DEFAULT_5XX:
-          ResponseParameters:
-            Headers:
-              Access-Control-Allow-Origin: "'*'"
 
   # CloudWatch Dashboard
   ContentSaverDashboard:
@@ -135,7 +93,7 @@ Resources:
               "x": 0, "y": 0, "width": 12, "height": 6,
               "properties": {
                 "metrics": [
-                  ["AWS/Lambda", "Invocations", "FunctionName", "${SaveContentFunction}"],
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${SaveContent}"],
                   [".", "Errors", ".", "."],
                   [".", "Duration", ".", "."]
                 ],
@@ -150,7 +108,7 @@ Resources:
               "x": 0, "y": 6, "width": 12, "height": 6,
               "properties": {
                 "metrics": [
-                  ["AWS/S3", "NumberOfObjects", "BucketName", "my-fbpcom", "StorageType", "AllStorageTypes"]
+                  ["AWS/S3", "NumberOfObjects", "BucketName", "my-fbp.com", "StorageType", "AllStorageTypes"]
                 ],
                 "period": 86400,
                 "stat": "Average",
@@ -338,17 +296,14 @@ Outputs:
     Value: my-fbp.com
   savecontentfunction:
     Description: "Save Content Lambda Function"
-    Value: !Sub "https://${ContentSaverApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/save-content"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/save-content"
   savecontentfunctionarn:
     Description: "Save Content Lambda Function ARN"
-    Value: !GetAtt SaveContentFunction.Arn
+    Value: !GetAtt SaveContent.Arn
   savecontentfunctionrole:
     Description: "Save Content Lambda Function Role"
-    Value: !GetAtt SaveContentFunctionRole.Arn
-  ApiEndpoint:
-    Description: "API Gateway endpoint URL for saving content"
-    Value: !Sub "https://${ContentSaverApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/save-content"
-    Export:
-      Name: !Sub "${AWS::StackName}-ApiEndpoint"
-    
+    Value: !GetAtt SaveContentRole.Arn
+  contentsavedashboard:
+    Description: "Content Saver CloudWatch Dashboard"
+    Value: !Ref ContentSaverDashboard 
 

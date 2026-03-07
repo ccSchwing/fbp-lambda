@@ -1,0 +1,21 @@
+To enablei dashboard for all functions:
+
+Resources:
+  SaveContent:
+    Type: AWS::Serverless::Function
+    Properties:
+      # ... your config
+      Environment:
+        Variables:
+          BUCKET_NAME: my-fbp.com
+          AWS_LAMBDA_EXEC_WRAPPER: /opt/otel-instrument
+          
+  GetPickSheetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      # ... your config
+      Environment:
+        Variables:
+          AWS_LAMBDA_EXEC_WRAPPER: /opt/otel-instrument
+          
+  # Add to all your functions...

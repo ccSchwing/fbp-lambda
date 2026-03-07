@@ -25,6 +25,7 @@ public class GetScheduleSheet {
         System.out.println("=== Starting getScheduleSheet() ===");
         String week = getCurrentWeek();
         System.out.println("Determined week: " + week);
+        System.out.println("Determined week: " + week);
 
         // if (request != null && request.getQueryStringParameters() != null) {
         //     week = request.getQueryStringParameters().get("Week");
