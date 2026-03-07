@@ -45,4 +45,13 @@ manifest_hash = ""
 packagetype = "Zip"
 functions = ["GetScheduleSheet"]
 
+[function_build_definitions.5c86d7e9-49f7-47a0-9fcb-c79dad6be7fa]
+codeuri = "/Users/ccs/projects/fbp-lambda/StoreGridSheet"
+runtime = "java11"
+architecture = "x86_64"
+handler = "com.fbp.SaveContentHandler::handleRequest"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["SaveContentFunction"]
+
 [layer_build_definitions]
