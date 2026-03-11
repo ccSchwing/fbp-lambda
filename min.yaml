@@ -71,11 +71,16 @@ Resources:
         Variables:
           FBPUsersTableName: !Ref FBPUsersTableName
       Events:
-        GetFBPUser:
+        GetFBPUserPost:
           Type: Api
           Properties:
             Path: /getFBPUser
             Method: POST
+        GetFBPUserOptions:
+          Type: Api
+          Properties:
+            Path: /getFBPUser
+            Method: OPTIONS
 Outputs:
   ApiUrl:
     Description: URL of the API gateway
