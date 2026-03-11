@@ -1,8 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: >
-  fbp-lambda
-  Sample SAM Template for fbp-lambda
+Description: |
+  fbp-lambda Sample SAM Template for fbp-lambda
 
 Globals:
   Function:
@@ -10,33 +9,39 @@ Globals:
     MemorySize: 512
   Api:
     Cors:
-      AllowMethods: "'GET,POST,OPTIONS'"
-      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+      AllowMethods: '''GET,POST,OPTIONS'''
+      AllowHeaders: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'''
       # AllowOrigin: "'https://my-fbp.com'"
-      AllowOrigin: "'*'"
+      AllowOrigin: '''*'''
 
 Parameters:
-  FBPUsersTableName:  # Fixed: Corrected spelling (was FBPusersTableName)
+  FBPUsersTableName:
+    # Fixed: Corrected spelling (was FBPusersTableName)
     Type: String
     Default: FBP-Users
-  FBPScheduleTableName:  # Added parameter for schedule table
+  FBPScheduleTableName:
+    # Added parameter for schedule table
     Type: String
     Default: 2025-Schedule
-  FBPSpreadTableName:  # Added parameter for spread table
+  FBPSpreadTableName:
+    # Added parameter for spread table
     Type: String
     Default: 2025-Spread
-  FBPConfigTableName:  # Added parameter for config table
+  FBPConfigTableName:
+    # Added parameter for config table
     Type: String
     Default: FBP-Config
-  FBPPicksTableName:  # Added parameter for picks table
+  FBPPicksTableName:
+    # Added parameter for picks table
     Type: String
     Default: FBP-Picks
-  FBPLogsTableName:  # Added parameter for logs table
+  FBPLogsTableName:
+    # Added parameter for logs table
     Type: String
     Default: 2025-Log
 
 Resources:
-    # S3 Bucket for storing content
+  # S3 Bucket for storing content
   # ContentBucket:
   #   Type: AWS::S3::Bucket
   #   DeletionPolicy: Retain
@@ -56,7 +61,7 @@ Resources:
   #           Status: Enabled
   #           NoncurrentVersionExpirationInDays: 30
   #     # Lambda function
-    # CloudWatch Log Group for S3 events
+  # CloudWatch Log Group for S3 events
   SaveContent:
     Type: AWS::Serverless::Function
     Properties:
@@ -64,7 +69,7 @@ Resources:
       Handler: com.fbp.SaveContent::handleRequest
       Runtime: java11
       Architectures:
-        - x86_64 
+        - x86_64
       MemorySize: 512
       Timeout: 30
       Environment:
@@ -84,7 +89,7 @@ Resources:
   ContentSaverDashboard:
     Type: AWS::CloudWatch::Dashboard
     Properties:
-      DashboardName: !Sub "${AWS::StackName}"
+      DashboardName: !Sub ${AWS::StackName}
       DashboardBody: !Sub |
         {
           "widgets": [
@@ -118,49 +123,56 @@ Resources:
             }
           ]
         }
-
-
+  # ...existing code...
   AddFBPUser:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./AddFBPUser
       Handler: com.fbp.AddFBPUser::addFBPUser
       Runtime: java11
+      # AutoPublishAlias: live
+      # SnapStart:
+      #   ApplyOn: PublishedVersions
       Architectures:
         - x86_64
-      # Remove MemorySize here since it's in Globals
-      # Remove Environment here since it's in Globals
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref FBPUsersTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPConfigTableName
       Environment:
         Variables:
-          FBPUsers: !Ref FBPUsersTableName
+          FBPUsersTableName: !Ref FBPUsersTableName
+          FBPConfigTableName: !Ref FBPConfigTableName
       Events:
-        AddFBPUser:
+        AddFBPUserApi:
           Type: Api
           Properties:
             Path: /addFBPUser
-            Method: POST
+            Method: post
+
   SaveFBPPicks:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./SaveFBPPicks
       Handler: com.fbp.SaveFBPPicks::saveFBPPicks
       Runtime: java11
+      # AutoPublishAlias: live
+      SnapStart: null # ApplyOn: PublishedVersions
       Architectures:
         - x86_64
-      # Remove MemorySize here since it's in Globals
-      # Remove Environment here since it's in Globals
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref FBPPicksTableName
         - DynamoDBCrudPolicy:
             TableName: !Ref FBPLogsTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPUsersTableName
       Environment:
         Variables:
           FBPPicksTableName: !Ref FBPPicksTableName
           FBPLogsTableName: !Ref FBPLogsTableName
+          FBPUsersTableName: !Ref FBPUsersTableName
       Events:
         SaveFBPPicks:
           Type: Api
@@ -169,139 +181,137 @@ Resources:
             Method: POST
 
   GetFBPUser:
-      Type: AWS::Serverless::Function
-      Properties:
-        CodeUri: ./GetFBPUsers
-        Handler: com.fbp.GetFBPUsers::getFBPUser
-        Runtime: java11
-        Architectures:
-          - x86_64
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./GetFBPUsers
+      Handler: com.fbp.GetFBPUsers::getFBPUser
+      Runtime: java11
+      Architectures:
+        - x86_64
       # Remove MemorySize here since it's in Globals
       # Remove Environment here since it's in Globals
-        Policies:
+      Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref FBPUsersTableName
-        Environment:
-          Variables:
-            FBPUsers: !Ref FBPUsersTableName
-        Events:
-          GetFBPUser:
-            Type: Api
-            Properties:
-              Path: /getFBPUser
-              Method: GET
-
+      Environment:
+        Variables:
+          FBPUsersTableName: !Ref FBPUsersTableName
+      Events:
+        GetFBPUser:
+          Type: Api
+          Properties:
+            Path: /getFBPUser
+            Method: GET
   GetPickSheet:
-      Type: AWS::Serverless::Function
-      Properties:
-        CodeUri: ./GetPickSheet
-        Handler: com.fbp.GetPickSheet::getPickSheet
-        Runtime: java11
-        Architectures:
-          - x86_64
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./GetPickSheet
+      Handler: com.fbp.GetPickSheet::getPickSheet
+      Runtime: java11
+      Architectures:
+        - x86_64
       # Remove MemorySize here since it's in Globals
       # Remove Environment here since it's in Globals
-        Policies:
+      Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref FBPScheduleTableName
         - DynamoDBReadPolicy:
             TableName: !Ref FBPConfigTableName
-        Environment:
-          Variables:
-            PERMISSION_REBUILD: "v1"  # This forces new logical ID Variables:
-            FBPScheduleTableName: !Ref FBPScheduleTableName
-            FBPConfigTableName: !Ref FBPConfigTableName
-        Events:
-          GetPickSheet:
-            Type: Api
-            Properties:
-              Path: /getPickSheet
-              Method: GET
-  GetScheduleSheet: 
-      Type: AWS::Serverless::Function
-      Properties:
-        CodeUri: ./GetScheduleSheet
-        Handler: com.fbp.GetScheduleSheet::getScheduleSheet
-        Runtime: java11
-        Architectures:
-          - x86_64
+      Environment:
+        Variables:
+          PERMISSION_REBUILD: v1 # This forces new logical ID Variables:
+          FBPScheduleTableName: !Ref FBPScheduleTableName
+          FBPConfigTableName: !Ref FBPConfigTableName
+      Events:
+        GetPickSheet:
+          Type: Api
+          Properties:
+            Path: /getPickSheet
+            Method: GET
+  GetScheduleSheet:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./GetScheduleSheet
+      Handler: com.fbp.GetScheduleSheet::getScheduleSheet
+      Runtime: java11
+      Architectures:
+        - x86_64
       # Remove MemorySize here since it's in Globals
       # Remove Environment here since it's in Globals
-        Policies:
+      Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref FBPScheduleTableName
         - DynamoDBReadPolicy:
             TableName: !Ref FBPConfigTableName
-        Environment:
-          Variables:
-            FBPScheduleTableName: !Ref FBPScheduleTableName
-            FBPConfigTableName: !Ref FBPConfigTableName
-        Events:
-          GetScheduleSheet:
-            Type: Api
-            Properties:
-              Path: /getScheduleSheet
-              Method: GET  
+      Environment:
+        Variables:
+          FBPScheduleTableName: !Ref FBPScheduleTableName
+          FBPConfigTableName: !Ref FBPConfigTableName
+      Events:
+        GetScheduleSheet:
+          Type: Api
+          Properties:
+            Path: /getScheduleSheet
+            Method: GET
 
 Outputs:
   addfbpuserfunction:
-    Description: "add fbp user lambda function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/addfbpuser"
+    Description: add fbp user lambda function
+    Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/addfbpuser
   addfpbuserfunctionarn:
-    Description: "add fbp user lambda function arn"
+    Description: add fbp user lambda function arn
     Value: !GetAtt AddFBPUser.Arn
   addfpbuserfunctionrole:
-    Description: "add fbp user lambda function role"
+    Description: add fbp user lambda function role
     Value: !GetAtt AddFBPUserRole.Arn
   getfbpuserfunction:
-    Description: "get fbp user lambda function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getfbpuser"
+    Description: get fbp user lambda function
+    Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getfbpuser
   getfpbuserfunctionarn:
-    Description: "get fbp user lambda function arn"
+    Description: get fbp user lambda function arn
     Value: !GetAtt GetFBPUser.Arn
   getfpbuserfunctionrole:
-    Description: "get fbp user lambda function role"
+    Description: get fbp user lambda function role
     Value: !GetAtt GetFBPUserRole.Arn
   getschedulesheetfunction:
-    Description: "get schedule sheet lambda function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getScheduleSheet"
+    Description: get schedule sheet lambda function
+    Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getScheduleSheet
   getschedulesheetfunctionarn:
-    Description: "get schedule sheet lambda function arn"
+    Description: get schedule sheet lambda function arn
     Value: !GetAtt GetScheduleSheet.Arn
   getschedulesheetfunctionrole:
-    Description: "get schedule sheet lambda function role"
+    Description: get schedule sheet lambda function role
     Value: !GetAtt GetScheduleSheetRole.Arn
   getpicksheetfunction:
-    Description: "get pick sheet lambda function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getPickSheet"
+    Description: get pick sheet lambda function
+    Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getPickSheet
   getpicksheetfunctionarn:
-    Description: "get pick sheet lambda function arn"
+    Description: get pick sheet lambda function arn
     Value: !GetAtt GetPickSheet.Arn
   getpicksheetfunctionrole:
-    Description: "get pick sheet lambda function role"
+    Description: get pick sheet lambda function role
     Value: !GetAtt GetPickSheetRole.Arn
   savefbppicksfunction:
-    Description: "save fbp picks lambda function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/saveFBPPicks"
+    Description: save fbp picks lambda function
+    Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/saveFBPPicks
   savefbppicksfunctionarn:
-    Description: "save fbp picks lambda function arn"
+    Description: save fbp picks lambda function arn
     Value: !GetAtt SaveFBPPicks.Arn
   savefbppicksfunctionrole:
-    Description: "save fbp picks lambda function role"
+    Description: save fbp picks lambda function role
     Value: !GetAtt SaveFBPPicksRole.Arn
   contentbucketname:
-    Description: "Content S3 Bucket Name"
+    Description: Content S3 Bucket Name
     Value: my-fbp.com
   savecontentfunction:
-    Description: "Save Content Lambda Function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/save-content"
+    Description: Save Content Lambda Function
+    Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/save-content
   savecontentfunctionarn:
-    Description: "Save Content Lambda Function ARN"
+    Description: Save Content Lambda Function ARN
     Value: !GetAtt SaveContent.Arn
   savecontentfunctionrole:
-    Description: "Save Content Lambda Function Role"
+    Description: Save Content Lambda Function Role
     Value: !GetAtt SaveContentRole.Arn
   contentsavedashboard:
-    Description: "Content Saver CloudWatch Dashboard"
-    Value: !Ref ContentSaverDashboard 
-
+    Description: Content Saver CloudWatch Dashboard
+    Value: !Ref ContentSaverDashboard

@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Globals:
+  Function:
+    Timeout: 20
+    MemorySize: 512
+  Api:
+    Cors:
+      AllowMethods: '''GET,POST,OPTIONS'''
+      AllowHeaders: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'''
+      # AllowOrigin: "'https://my-fbp.com'"
+      AllowOrigin: '''*'''
+Parameters:
+  FBPUsersTableName:
+    Type: String
+    Default: FBP-Users
+  FBPConfigTableName:
+    Type: String
+    Default: FBP-Config
+  FBPScheduleTableName:
+    # Added parameter for schedule table
+    Type: String
+    Default: 2025-Schedule
+  FBPPicksTableName:
+    # Added parameter for picks table
+    Type: String
+    Default: FBP-Picks
+  FBPLogsTableName:
+    # Added parameter for logs table
+    Type: String
+    Default: 2025-Log
+
+Resources:
+  AddFBPUser:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: AddFBPUser/target/AddFBPUser-1.0.jar
+      Handler: com.fbp.AddFBPUser::addFBPUser
+      Runtime: java11
+      Architectures:
+        - x86_64
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /addFBPUser
+            Method: post
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FBPUsersTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPConfigTableName
+      Environment:
+        Variables:
+          FBPUsersTableName: !Ref FBPUsersTableName
+          FBPConfigTableName: !Ref FBPConfigTableName
+  GetFBPUser:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: GetFBPUser/target/GetFBPUser-1.0.jar
+      Handler: com.fbp.GetFBPUser::getFBPUser
+      Runtime: java11
+      Architectures:
+        - x86_64
+      # Remove MemorySize here since it's in Globals
+      # Remove Environment here since it's in Globals
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPUsersTableName
+      Environment:
+        Variables:
+          FBPUsersTableName: !Ref FBPUsersTableName
+      Events:
+        GetFBPUser:
+          Type: Api
+          Properties:
+            Path: /getFBPUser
+            Method: POST

@@ -4,7 +4,7 @@
     <groupId>adduser</groupId>
     <artifactId>AddFBPUser</artifactId>
     <version>1.0</version>
-    <packaging>jar</packaging>
+    <!-- <packaging>jar</packaging> -->
     <name>Add FBP User Project</name>
     <properties>
         <maven.compiler.target>11</maven.compiler.target>
