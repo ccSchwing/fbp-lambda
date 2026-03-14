@@ -54,6 +54,36 @@ Resources:
         Variables:
           FBPUsersTableName: !Ref FBPUsersTableName
           FBPConfigTableName: !Ref FBPConfigTableName
+  GetFBPPicks:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: GetFBPPicks/target/GetFBPPicks-1.0.jar
+      Handler: com.fbp.GetFBPPicks::getFBPPicks
+      Runtime: java11
+      Architectures:
+        - x86_64
+      # Remove MemorySize here since it's in Globals
+      # Remove Environment here since it's in Globals
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPPicksTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPConfigTableName
+      Environment:
+        Variables:
+          FBPPicksTableName: !Ref FBPPicksTableName
+          FBPConfigTableName: !Ref FBPConfigTableName
+      Events:
+        GetFBPUserPost:
+          Type: Api
+          Properties:
+            Path: /getFBPPicks
+            Method: POST
+        GetFBPUserOptions:
+          Type: Api
+          Properties:
+            Path: /getFBPPicks
+            Method: OPTIONS
   GetFBPUser:
     Type: AWS::Serverless::Function
     Properties:
@@ -175,6 +205,43 @@ Resources:
             }
           ]
         }
+  SaveFBPPicks:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: SaveFBPPicks/target/SaveFBPPicks-1.0.jar
+      Handler: com.fbp.SaveFBPPicks::saveFBPPicks
+      Runtime: java11
+      # AutoPublishAlias: live
+      SnapStart: null # ApplyOn: PublishedVersions
+      Architectures:
+        - x86_64
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FBPPicksTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FBPLogsTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPUsersTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPConfigTableName
+      Environment:
+        Variables:
+          FBPPicksTableName: !Ref FBPPicksTableName
+          FBPLogsTableName: !Ref FBPLogsTableName
+          FBPUsersTableName: !Ref FBPUsersTableName
+          FBPConfigTableName: !Ref FBPConfigTableName
+      Events:
+        SaveFBPPicks:
+          Type: Api
+          Properties:
+            Path: /saveFBPPicks
+            Method: POST
+        SaveFBPPicksOptions:
+          Type: Api
+          Properties:
+            Path: /saveFBPPicks
+            Method: OPTIONS
+
 Outputs:
   ApiUrl:
     Description: URL of the API gateway
@@ -213,3 +280,19 @@ Outputs:
     Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/save-content
     Export:
       Name: !Sub ${AWS::StackName}-SaveContentApi
+  SaveFBPPicksFunction:
+    Description: SaveFBPPicks Lambda Function ARN
+    Value: !GetAtt SaveFBPPicks.Arn
+  SaveFBPPicksApi:
+    Description: SaveFBPPicks API Endpoint
+    Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/saveFBPPicks
+    Export:
+      Name: !Sub ${AWS::StackName}-SaveFBPPicksApi
+  GetFBPPicksFunction:
+    Description: GetFBPPicks Lambda Function ARN
+    Value: !GetAtt GetFBPPicks.Arn
+  GetFBPPicksApi:
+    Description: GetFBPPicks API Endpoint
+    Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getFBPPicks
+    Export:
+      Name: !Sub ${AWS::StackName}-GetFBPPicksApi
