@@ -1,5 +1,6 @@
 package com.fbp;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -13,46 +14,43 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
-import software.amazon.awssdk.enhanced.dynamodb.model.PageIterable;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
-import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 
 public class GetScheduleSheet {
     public APIGatewayProxyResponseEvent getScheduleSheet(APIGatewayProxyRequestEvent request) throws JsonProcessingException {
+        APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Access-Control-Allow-Origin", "*");
+        headers.put("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+        headers.put("Access-Control-Allow-Headers",
+                "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token");
+        // Handle OPTIONS preflight request
+        if ("OPTIONS".equals(request.getHttpMethod())) {
+            response.setStatusCode(200);
+            response.setBody("");
+            response.setHeaders(headers);
+            return response;
+        }
         System.out.println("=== Starting getScheduleSheet() ===");
-        String week = getCurrentWeek();
-        System.out.println("Determined week: " + week);
+        String week = FBPUtils.getCurrentWeek();
         System.out.println("Determined week: " + week);
 
-        // if (request != null && request.getQueryStringParameters() != null) {
-        //     week = request.getQueryStringParameters().get("Week");
-        // }
-        // if ((week == null || week.isBlank()) && request != null && request.getBody() != null && !request.getBody().isBlank()) {
-        //     try {
-        //         Map<String, String> body = new ObjectMapper().readValue(request.getBody(), new TypeReference<Map<String, String>>() {
-        //         });
-        //         if (body != null) {
-        //             week = body.get("Week");
-        //         }
-        //     } catch (Exception e) {
-        //         return new APIGatewayProxyResponseEvent()
-        //             .withStatusCode(400)
-        //             .withHeaders(Map.of(
-        //                 "Access-Control-Allow-Origin", "https://my-fbp.com",
-        //                 "Content-Type", "application/json"))
-        //             .withBody(new ObjectMapper().writeValueAsString(Map.of("error", "Failed to parse request body: " + e.getMessage())));
-        //     }
-        // }
          if (week == null || week.isBlank()) {
              return new APIGatewayProxyResponseEvent()
                  .withStatusCode(400)
-                 .withHeaders(Map.of(
-                     "Access-Control-Allow-Origin", "https://my-fbp.com",
-                     "Content-Type", "application/json"))
+                 .withHeaders(headers)
                  .withBody(new ObjectMapper().writeValueAsString(Map.of("error", "Could not get week from FBPConfig table")));
+        }
+
+        final double weekNumber;
+        try {
+            weekNumber = Double.parseDouble(week);
+        } catch (NumberFormatException e) {
+            return new APIGatewayProxyResponseEvent()
+                .withStatusCode(400)
+                .withHeaders(headers)
+                .withBody(new ObjectMapper().writeValueAsString(Map.of("error", "Invalid week format: " + week)));
         }
 
         DynamoDbClient dynamoDbClient = DynamoDbClient.builder().build();
@@ -60,178 +58,31 @@ public class GetScheduleSheet {
             .dynamoDbClient(dynamoDbClient)
             .build();
 
-        DynamoDbTable<FBPGridSheet> table =
-            enhancedClient.table(System.getenv("FBPScheduleTableName"), TableSchema.fromClass(FBPGridSheet.class));
+        DynamoDbTable<FBPScheduleRow> table =
+            enhancedClient.table(System.getenv("FBPScheduleTableName"), TableSchema.fromClass(FBPScheduleRow.class));
         try {
             System.out.println("Querying for schedule sheet for week: " + week);
-            List<FBPGridSheet> pickSheets = table.query(QueryConditional.keyEqualTo(Key.builder().partitionValue(Double.parseDouble(week)).build()))
+            List<FBPScheduleRow> scheduleRows = table.query(QueryConditional.keyEqualTo(Key.builder().partitionValue(weekNumber).build()))
                 .items()
                 .stream()
                 .collect(Collectors.toList());
             
-            if (pickSheets == null || pickSheets.isEmpty()) {
+            if (scheduleRows == null || scheduleRows.isEmpty()) {
                 return new APIGatewayProxyResponseEvent()
                     .withStatusCode(404)
-                    .withHeaders(Map.of(
-                        "Access-Control-Allow-Origin", "https://my-fbp.com",
-                        "Content-Type", "application/json"))
-                    .withBody(new ObjectMapper().writeValueAsString(Map.of("error", "No pick sheet found for week " + week)));
+                    .withHeaders(headers)
+                    .withBody(new ObjectMapper().writeValueAsString(Map.of("error", "No schedule found for week " + week)));
             }
             return new APIGatewayProxyResponseEvent()
                 .withStatusCode(200)
-                .withHeaders(Map.of(
-                    "Access-Control-Allow-Origin", "https://my-fbp.com",
-                    "Content-Type", "application/json"))
-                .withBody(new ObjectMapper().writeValueAsString(pickSheets));
+                .withHeaders(headers)
+                .withBody(new ObjectMapper().writeValueAsString(scheduleRows));
         } catch (Exception e) {
             return new APIGatewayProxyResponseEvent()
                 .withStatusCode(500)
-                .withHeaders(Map.of(
-                    "Access-Control-Allow-Origin", "https://my-fbp.com",
-                    "Content-Type", "application/json"))
+                .withHeaders(headers)
                 .withBody(new ObjectMapper().writeValueAsString(Map.of("error", e.getMessage())));
         }
     }
     
-public String getCurrentWeekWithRawClient() {
-    System.out.println("=== Starting getCurrentWeek() ===");
-    
-    String tableName = System.getenv("FBPConfigTableName");
-    System.out.println("Table name: " + tableName);
-    
-    try {
-        // First, let's try a raw DynamoDB scan to see what's actually in the table
-        DynamoDbClient rawClient = DynamoDbClient.builder().build();
-        ScanRequest scanRequest = ScanRequest.builder()
-            .tableName(tableName)
-            .build();
-            
-        ScanResponse rawResponse = rawClient.scan(scanRequest);
-        System.out.println("Raw scan found " + rawResponse.items().size() + " items");
-        
-        for (Map<String, AttributeValue> item : rawResponse.items()) {
-            System.out.println("Raw item: " + item);
-            for (Map.Entry<String, AttributeValue> entry : item.entrySet()) {
-                System.out.println("  " + entry.getKey() + " = " + entry.getValue());
-            }
-        }
-        
-        // Now try the enhanced client
-        DynamoDbEnhancedClient enhancedClient = DynamoDbEnhancedClient.builder()
-            .dynamoDbClient(rawClient)
-            .build();
-            
-        DynamoDbTable<FBPConfig> table = enhancedClient.table(tableName, TableSchema.fromBean(FBPConfig.class));
-        
-        PageIterable<FBPConfig> configPages = table.scan();
-        
-        int itemCount = 0;
-        for (FBPConfig config : configPages.items()) {
-            itemCount++;
-            System.out.println("Enhanced client - Found item #" + itemCount);
-            System.out.println("Config object: " + config);
-            
-            if (config != null) {
-                String week = config.getWeek();
-                System.out.println("Week value: " + week);
-                return week;
-            } else {
-                System.out.println("Config object is null");
-            }
-        }
-        
-    } catch (Exception e) {
-        System.err.println("EXCEPTION: " + e.getMessage());
-        e.printStackTrace();
-        return null;
-    }
-    
-    return null;
-}
-
-
-
-
-
-
-public String getCurrentWeek() {
-    System.out.println("=== Starting getCurrentWeek() ===");
-    
-    // Check environment variable first
-    String tableName = System.getenv("FBPConfigTableName");
-    System.out.println("Environment variable FBPConfigTableName: " + tableName);
-    
-    if (tableName == null || tableName.isEmpty()) {
-        System.err.println("ERROR: Environment variable FBPConfigTableName is not set or empty");
-        return null;
-    }
-    
-    try {
-        System.out.println("Creating DynamoDB clients...");
-        DynamoDbClient dynamoDbClient = DynamoDbClient.builder().build();
-        DynamoDbEnhancedClient enhancedClient = DynamoDbEnhancedClient.builder()
-            .dynamoDbClient(dynamoDbClient)
-            .build();
-            
-        System.out.println("Creating table reference...");
-        DynamoDbTable<FBPConfig> table = enhancedClient.table(tableName, TableSchema.fromBean(FBPConfig.class));
-        
-        System.out.println("Starting table scan...");
-        PageIterable<FBPConfig> configPages = table.scan();
-        
-        System.out.println("Iterating through scan results...");
-        int itemCount = 0;
-        for (FBPConfig config : configPages.items()) {
-            itemCount++;
-            System.out.println("Found item #" + itemCount);
-            
-            if (config != null) {
-                String week = config.getWeek();
-                System.out.println("Week value: " + week);
-                return week;
-            } else {
-                System.out.println("Config object is null");
-            }
-        }
-        
-        System.out.println("Total items found: " + itemCount);
-        if (itemCount == 0) {
-            System.out.println("No items found in table - table might be empty");
-        }
-        
-    } catch (Exception e) {
-        System.err.println("EXCEPTION in getCurrentWeek(): " + e.getClass().getSimpleName() + " - " + e.getMessage());
-        e.printStackTrace();
-        return null;
-    }
-    
-    System.out.println("Reached end of function - returning null");
-    return null;
-}
-
-
-
-
-
-
-
-    public String getCurrentWeekNoDebug(){
-
-        DynamoDbClient dynamoDbClient = DynamoDbClient.builder().build();
-        DynamoDbEnhancedClient enhancedClient = DynamoDbEnhancedClient.builder()
-            .dynamoDbClient(dynamoDbClient)
-            .build();
-            DynamoDbTable<FBPConfig> table =
-            enhancedClient.table(System.getenv("FBPConfigTableName"), TableSchema.fromBean(FBPConfig.class));
-        try {
-            PageIterable<FBPConfig> configPages = table.scan();
-            for (FBPConfig config : configPages.items()) {
-                return config.getWeek();
-            }
-        } catch (Exception e) {
-            System.err.println("Error retrieving current week from FBPConfig table: " + e.getMessage());
-            return null;
-        }
-        return null;        // Should not reach here
-    } 
 }

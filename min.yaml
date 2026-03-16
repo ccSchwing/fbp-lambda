@@ -144,6 +144,36 @@ Resources:
           Properties:
             Path: /getPickSheet
             Method: OPTIONS
+  GetScheduleSheet:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: GetScheduleSheet/
+      Handler: com.fbp.GetScheduleSheet::getScheduleSheet
+      Runtime: java11
+      Architectures:
+        - x86_64
+      # Remove MemorySize here since it's in Globals
+      # Remove Environment here since it's in Globals
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPScheduleTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPConfigTableName
+      Environment:
+        Variables:
+          FBPScheduleTableName: !Ref FBPScheduleTableName
+          FBPConfigTableName: !Ref FBPConfigTableName
+      Events:
+        GetScheduleSheetPost:
+          Type: Api
+          Properties:
+            Path: /getScheduleSheet
+            Method: GET
+          GetScheduleSheetOptions:
+            Type: Api
+            Properties:
+              Path: /getScheduleSheet
+              Method: OPTIONS
   SaveContent:
     Type: AWS::Serverless::Function
     Properties:
@@ -299,3 +329,11 @@ Outputs:
     Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getFBPPicks
     Export:
       Name: !Sub ${AWS::StackName}-GetFBPPicksApi
+  GetScheduleSheetFunction:
+    Description: GetScheduleSheet Lambda Function ARN
+    Value: !GetAtt GetScheduleSheet.Arn
+  GetScheduleSheetApi:
+    Description: GetScheduleSheet API Endpoint
+    Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getScheduleSheet
+    Export:
+      Name: !Sub ${AWS::StackName}-GetScheduleSheetApi
