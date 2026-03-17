@@ -12,10 +12,13 @@ public class FBPScheduleRow {
     private String gameId;
     private String awayTeam;
     private String homeTeam;
+    private double homeScore;
+    private double awayScore;
     private String date;
-    private String spread;
+    private double spread;
     private String finalWithSpread;
-    private String Underdog;
+    private String underdog;
+    private String winner;
 
     @DynamoDbPartitionKey
     @DynamoDbAttribute("Week")
@@ -35,6 +38,14 @@ public class FBPScheduleRow {
     public String getHomeTeam() { return homeTeam; }
     public void setHomeTeam(String homeTeam) { this.homeTeam = homeTeam; }
 
+    @DynamoDbAttribute("HomeScore")
+    public double getHomeScore() { return homeScore; }
+    public void setHomeScore(double homeScore) { this.homeScore = homeScore; }
+
+    @DynamoDbAttribute("AwayScore")
+    public double getAwayScore() { return awayScore; }
+    public void setAwayScore(double awayScore) { this.awayScore = awayScore; }
+
     @DynamoDbAttribute("Date")
     public String getDate() { return date; }
     public void setDate(String date) { this.date = date; }
@@ -44,10 +55,14 @@ public class FBPScheduleRow {
     public void setFinalWithSpread(String finalWithSpread) { this.finalWithSpread = finalWithSpread; }
 
     @DynamoDbAttribute("Spread")
-    public String getSpread() { return spread; }
-    public void setSpread(String spread) { this.spread = spread; }
+    public double getSpread() { return spread; }
+    public void setSpread(double spread) { this.spread = spread; }
 
     @DynamoDbAttribute("Underdog")
-    public String getUnderdog() { return Underdog; }
-    public void setUnderdog(String Underdog) { this.Underdog = Underdog; }
+    public String getUnderdog() { return underdog; }
+    public void setUnderdog(String underdog) { this.underdog = underdog; }
+
+    @DynamoDbAttribute("Winner")
+    public String getWinner() { return winner; }
+    public void setWinner(String winner) { this.winner = winner; }
 }
