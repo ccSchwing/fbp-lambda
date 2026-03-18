@@ -7,15 +7,18 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbParti
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
 @DynamoDbBean
-public class FBPGridSheet {
+public class FBPScheduleRow {
     private double week;
     private String gameId;
     private String awayTeam;
     private String homeTeam;
+    private double homeScore;
+    private double awayScore;
     private String date;
     private double spread;
-    private double finalWithSpread;
-    private String Underdog;
+    private String finalWithSpread;
+    private String underdog;
+    private String winner;
 
     @DynamoDbPartitionKey
     @DynamoDbAttribute("Week")
@@ -35,19 +38,31 @@ public class FBPGridSheet {
     public String getHomeTeam() { return homeTeam; }
     public void setHomeTeam(String homeTeam) { this.homeTeam = homeTeam; }
 
+    @DynamoDbAttribute("HomeScore")
+    public double getHomeScore() { return homeScore; }
+    public void setHomeScore(double homeScore) { this.homeScore = homeScore; }
+
+    @DynamoDbAttribute("AwayScore")
+    public double getAwayScore() { return awayScore; }
+    public void setAwayScore(double awayScore) { this.awayScore = awayScore; }
+
     @DynamoDbAttribute("Date")
     public String getDate() { return date; }
     public void setDate(String date) { this.date = date; }
 
     @DynamoDbAttribute("FinalWithSpread")
-    public double getFinalWithSpread() { return finalWithSpread; }
-    public void setFinalWithSpread(double finalWithSpread) { this.finalWithSpread = finalWithSpread; }
+    public String getFinalWithSpread() { return finalWithSpread; }
+    public void setFinalWithSpread(String finalWithSpread) { this.finalWithSpread = finalWithSpread; }
 
     @DynamoDbAttribute("Spread")
     public double getSpread() { return spread; }
     public void setSpread(double spread) { this.spread = spread; }
 
     @DynamoDbAttribute("Underdog")
-    public String getUnderdog() { return Underdog; }
-    public void setUnderdog(String Underdog) { this.Underdog = Underdog; }
+    public String getUnderdog() { return underdog; }
+    public void setUnderdog(String underdog) { this.underdog = underdog; }
+
+    @DynamoDbAttribute("Winner")
+    public String getWinner() { return winner; }
+    public void setWinner(String winner) { this.winner = winner; }
 }

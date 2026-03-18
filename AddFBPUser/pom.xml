@@ -4,8 +4,8 @@
     <groupId>adduser</groupId>
     <artifactId>AddFBPUser</artifactId>
     <version>1.0</version>
-    <packaging>jar</packaging>
-    <name>Add FBP User Project</name>
+    <!-- <packaging>jar</packaging> -->
+    <name>AddFBPUser</name>
     <properties>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -48,6 +48,12 @@
           <version>4.13.2</version>
           <scope>test</scope>
         </dependency>
+    
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>2.10.0.pr1</version>
+      </dependency>
     </dependencies>
 <dependencyManagement>
       <dependencies>

@@ -1,40 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>adduser</groupId>
-  <artifactId>AddFBPUser</artifactId>
-  <name>AddFBPUser</name>
+  <groupId>com.fbp</groupId>
+  <artifactId>SaveFBPPicks</artifactId>
+  <name>SaveFBPPicks</name>
   <version>1.0</version>
   <build>
     <plugins>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <version>3.0.0</version>
-        <executions>
-          <execution>
-            <phase>compile</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target>
-                <mkdir />
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.11.0</version>
-        <configuration>
-          <fork>true</fork>
-          <compilerArgs>
-            <arg>--add-opens=java.base/java.lang=ALL-UNNAMED</arg>
-            <arg>--add-opens=java.base/sun.nio.ch=ALL-UNNAMED</arg>
-          </compilerArgs>
-        </configuration>
-      </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
         <version>3.2.4</version>
@@ -46,7 +18,13 @@
             </goals>
           </execution>
         </executions>
-        <configuration />
+        <configuration>
+          <fork>true</fork>
+          <compilerArgs>
+            <arg>--add-opens=java.base/java.lang=ALL-UNNAMED</arg>
+            <arg>--add-opens=java.base/sun.nio.ch=ALL-UNNAMED</arg>
+          </compilerArgs>
+        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -73,12 +51,24 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore</artifactId>
+        <version>4.4.16</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>1.17.1</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
   <properties>
     <maven.compiler.release>11</maven.compiler.release>
-    <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.target>17</maven.compiler.target>
     <aws.java.sdk.version>2.41.13</aws.java.sdk.version>
+    <aws.sdk.version>2.30.30</aws.sdk.version>
+    <maven.compiler.source>17</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 </project>
