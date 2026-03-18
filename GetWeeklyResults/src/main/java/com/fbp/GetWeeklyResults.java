@@ -102,10 +102,10 @@ public class GetWeeklyResults {
             System.out.println("User picks: " + userPicksStr);
             // Iterate through the picksRows and compare the user's picks to the actual results for each game
             // and determine how many picks are correct and how many are incorrect.
-            int correctPicks = 0;
-            int incorrectPicks = 0;
-            int actualCorrectPicks = 0;
-            int actualIncorrectPicks = 0;
+            Integer correctPicks = 0;
+            Integer incorrectPicks = 0;
+            Integer actualCorrectPicks = 0;
+            Integer actualIncorrectPicks = 0;
             for (FBPPicksResult result : picksRows) {
 
                 String[] picksArray = userPicksStr.split(",");
@@ -141,10 +141,9 @@ public class GetWeeklyResults {
                  System.out.println("User not found in FBP-Users table for email: " + userPicks.getEmail());
                  continue;
             }
-            user.setTotalCorrectPicks(String.valueOf(actualCorrectPicks));
-            user.setTotalIncorrectPicks(String.valueOf(actualIncorrectPicks));
+            user.setTotalCorrectPicks(user.getTotalCorrectPicks() + actualCorrectPicks);
+            user.setTotalIncorrectPicks(user.getTotalIncorrectPicks() + actualIncorrectPicks);
             userTable.updateItem(user);
-
         }
     }
 }
