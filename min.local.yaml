@@ -29,6 +29,10 @@ Parameters:
     # Added parameter for logs table
     Type: String
     Default: 2025-Log
+  FBPWeeklyResultsTableName:
+    # Added parameter for weekly results table
+    Type: String
+    Default: FBP-Weekly-Results
 
 Resources:
   AddFBPUser:
@@ -186,6 +190,8 @@ Resources:
       # Remove MemorySize here since it's in Globals
       # Remove Environment here since it's in Globals
       Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FBPWeeklyResultsTableName
         - DynamoDBReadPolicy:
             TableName: !Ref FBPScheduleTableName
         - DynamoDBReadPolicy:
@@ -196,6 +202,7 @@ Resources:
             TableName: !Ref FBPUsersTableName
       Environment:
         Variables:
+          FBPWeeklyResultsTableName: !Ref FBPWeeklyResultsTableName
           FBPScheduleTableName: !Ref FBPScheduleTableName
           FBPPicksTableName: !Ref FBPPicksTableName
           FBPConfigTableName: !Ref FBPConfigTableName

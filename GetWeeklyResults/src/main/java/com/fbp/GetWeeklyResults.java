@@ -144,6 +144,17 @@ public class GetWeeklyResults {
             user.setTotalCorrectPicks(user.getTotalCorrectPicks() + actualCorrectPicks);
             user.setTotalIncorrectPicks(user.getTotalIncorrectPicks() + actualIncorrectPicks);
             userTable.updateItem(user);
+            // Set FBP-Weekly-Results table with the results for each user for the given week.
+            DynamoDbTable<FBPWeeklyResult> weeklyResultTable = enhancedClient.table(System.getenv("FBPWeeklyResultsTableName"), TableSchema.fromClass(FBPWeeklyResult.class));
+            FBPWeeklyResult weeklyResult = new FBPWeeklyResult();
+            weeklyResult.setEmail(userPicks.getEmail());
+            weeklyResult.setDisplayName(user.getDisplayName());
+            weeklyResult.setWeek(weekNumber);
+            weeklyResult.setCorrectPicks(actualCorrectPicks);
+            weeklyResult.setIncorrectPicks(actualIncorrectPicks);
+            weeklyResult.setWinner(false); // You will need to implement logic to determine the winner for the week and set this field accordingly.
+            weeklyResultTable.putItem(weeklyResult);
+            System.out.println("Updated FBP-Users table and FBP-Weekly-Results table for user: " + userPicks.getEmail());
         }
     }
 }

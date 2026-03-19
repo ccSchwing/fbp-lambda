@@ -6,10 +6,10 @@ Globals:
     MemorySize: 512
   Api:
     Cors:
-      AllowMethods: '''GET,POST,OPTIONS'''
-      AllowHeaders: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'''
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
       # AllowOrigin: "'https://my-fbp.com'"
-      AllowOrigin: '''*'''
+      AllowOrigin: "'*'"
 Parameters:
   FBPUsersTableName:
     Type: String
@@ -29,6 +29,10 @@ Parameters:
     # Added parameter for logs table
     Type: String
     Default: 2025-Log
+  FBPWeeklyResultsTableName:
+    # Added parameter for weekly results table
+    Type: String
+    Default: FBP-Weekly-Results
 
 Resources:
   AddFBPUser:
@@ -44,7 +48,7 @@ Resources:
           Type: Api
           Properties:
             Path: /addFBPUser
-            Method: post
+            Method: POST
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref FBPUsersTableName
@@ -169,11 +173,11 @@ Resources:
           Properties:
             Path: /getScheduleSheet
             Method: GET
-          GetScheduleSheetOptions:
-            Type: Api
-            Properties:
-              Path: /getScheduleSheet
-              Method: OPTIONS
+        GetScheduleSheetOptions:
+          Type: Api
+          Properties:
+            Path: /getScheduleSheet
+            Method: OPTIONS
   SaveContent:
     Type: AWS::Serverless::Function
     Properties:
@@ -201,11 +205,11 @@ Resources:
           Properties:
             Path: /save-content
             Method: OPTIONS
-    ContentSaverDashboard:
-      Type: AWS::CloudWatch::Dashboard
-      Properties:
-       DashboardName: !Sub ${AWS::StackName}
-       DashboardBody: !Sub |
+  ContentSaverDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub ${AWS::StackName}
+      DashboardBody: !Sub |
         {
           "widgets": [
             {
@@ -244,8 +248,6 @@ Resources:
       CodeUri: SaveFBPPicks/target/SaveFBPPicks-1.0.jar
       Handler: com.fbp.SaveFBPPicks::saveFBPPicks
       Runtime: java11
-      # AutoPublishAlias: live
-      SnapStart: null # ApplyOn: PublishedVersions
       Architectures:
         - x86_64
       Policies:
@@ -293,23 +295,26 @@ Resources:
             TableName: !Ref FBPConfigTableName
         - DynamoDBCrudPolicy:
             TableName: !Ref FBPUsersTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FBPWeeklyResultsTableName
       Environment:
         Variables:
           FBPScheduleTableName: !Ref FBPScheduleTableName
           FBPPicksTableName: !Ref FBPPicksTableName
           FBPConfigTableName: !Ref FBPConfigTableName
           FBPUsersTableName: !Ref FBPUsersTableName
+          FBPWeeklyResultsTableName: !Ref FBPWeeklyResultsTableName
       Events:
         GetWeeklyResultsGet:
           Type: Api
           Properties:
             Path: /getWeeklyResults
             Method: GET
-          GetWeeklyResultsOptions:
-            Type: Api
-            Properties:
-              Path: /getWeeklyResults
-              Method: OPTIONS
+        GetWeeklyResultsOptions:
+          Type: Api
+          Properties:
+            Path: /getWeeklyResults
+            Method: OPTIONS
 
 
 Outputs:
