@@ -35,7 +35,7 @@ Parameters:
     Default: FBP-Weekly-Results
   FBPWeeklyResultsWeekIndexName:
     Type: String
-    Default: Week
+    Default: WeekIndex
 
 Resources:
   AddFBPUser:
@@ -186,11 +186,11 @@ Resources:
           Properties:
             Path: /getPickSheet
             Method: OPTIONS
-  GetScheduleSheet:
+  UpdateWeeklyResults:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: GetScheduleSheet/
-      Handler: com.fbp.GetScheduleSheet::getScheduleSheet
+      CodeUri: UpdateWeeklyResults/
+      Handler: com.fbp.UpdateWeeklyResults::calcWeeklyGameResults
       Runtime: java11
       Architectures:
         - x86_64
@@ -206,21 +206,21 @@ Resources:
           FBPScheduleTableName: !Ref FBPScheduleTableName
           FBPConfigTableName: !Ref FBPConfigTableName
       Events:
-        GetScheduleSheetGet:
+        UpdateWeeklyResultsGet:
           Type: Api
           Properties:
-            Path: /getScheduleSheet
+            Path: /updateWeeklyResults
             Method: GET
-        GetScheduleSheetOptions:
+        UpdateWeeklyResultsOptions:
           Type: Api
           Properties:
-            Path: /getScheduleSheet
+            Path: /updateWeeklyResults
             Method: OPTIONS
-  GetWeeklyResults:
+  CalcWeeklyResults:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: GetWeeklyResults/
-      Handler: com.fbp.GetWeeklyResults::getWeeklyResults
+      CodeUri: CalcWeeklyResults/
+      Handler: com.fbp.CalcWeeklyResults::calcWeeklyResults
       Runtime: java11
       Architectures:
         - x86_64
@@ -229,7 +229,7 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref FBPWeeklyResultsTableName
-        - DynamoDBReadPolicy:
+        - DynamoDBCrudPolicy:
             TableName: !Ref FBPScheduleTableName
         - DynamoDBReadPolicy:
             TableName: !Ref FBPPicksTableName
@@ -246,15 +246,15 @@ Resources:
           FBPUsersTableName: !Ref FBPUsersTableName
           FBPWeeklyResultsWeekIndexName: !Ref FBPWeeklyResultsWeekIndexName
       Events:
-        GetWeeklyResultsGet:
+        CalcWeeklyResultsGet:
           Type: Api
           Properties:
-            Path: /getWeeklyResults
+            Path: /calcWeeklyResults
             Method: GET
-        GetWeeklyResultsOptions:
+        CalcWeeklyResultsOptions:
           Type: Api
           Properties:
-            Path: /getWeeklyResults
+            Path: /calcWeeklyResults
             Method: OPTIONS
   GetWeeklyResultsSheet:
     Type: AWS::Serverless::Function
@@ -271,13 +271,15 @@ Resources:
             TableName: !Ref FBPWeeklyResultsTableName
         - DynamoDBReadPolicy:
             TableName: !Ref FBPConfigTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPUsersTableName
       Environment:
         Variables:
           FBPWeeklyResultsTableName: !Ref FBPWeeklyResultsTableName
           FBPWeeklyResultsWeekIndexName: !Ref FBPWeeklyResultsWeekIndexName
           FBPConfigTableName: !Ref FBPConfigTableName
       Events:
-        GetWeeklyResultSheetGet:
+        GetWeeklyResultsSheetGet:
           Type: Api
           Properties:
             Path: /getWeeklyResultsSheet
@@ -449,14 +451,14 @@ Outputs:
       Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getFBPPicks
       Export:
         Name: !Sub ${AWS::StackName}-GetFBPPicksApi
-    GetWeeklyResultsFunction:
-      Description: GetWeeklyResults Lambda Function ARN
-      Value: !GetAtt GetWeeklyResults.Arn
-    GetWeeklyResultsApi:
-      Description: GetWeeklyResults API Endpoint
-      Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getWeeklyResults
+    UpdateWeeklyResultsFunction:
+      Description: UpdateWeeklyResults Lambda Function ARN
+      Value: !GetAtt UpdateWeeklyResults.Arn
+    UpdateWeeklyResultsApi:
+      Description: UpdateWeeklyResults API Endpoint
+      Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/updateWeeklyResults
       Export:
-        Name: !Sub ${AWS::StackName}-GetWeeklyResultsApi
+        Name: !Sub ${AWS::StackName}-UpdateWeeklyResultsApi
     GetFBPPkicksForUserFunction:
       Description: GetFBPPicksForUser Lambda Function ARN
       Value: !GetAtt GetFBPPicksForUser.Arn

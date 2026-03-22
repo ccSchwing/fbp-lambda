@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.Comparator;
 
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
@@ -16,9 +17,21 @@ import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 
-public class GetWeeklyResults {
-    public APIGatewayProxyResponseEvent getWeeklyResults(APIGatewayProxyRequestEvent request) throws JsonProcessingException {
+
+public class UpdateWeeklyResults {
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private String toJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to serialize response body", e);
+        }
+    }
+    public APIGatewayProxyResponseEvent updateWeeklyResults(APIGatewayProxyRequestEvent request) throws JsonProcessingException {
+
         APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
         Map<String, String> headers = new HashMap<>();
         headers.put("Access-Control-Allow-Origin", "*");
@@ -32,7 +45,7 @@ public class GetWeeklyResults {
             response.setHeaders(headers);
             return response;
         }
-        System.out.println("=== Starting getScheduleSheet() ===");
+        System.out.println("=== Starting updateWeeklyResults() ===");
         Integer week = FBPUtils.getCurrentWeek();
         System.out.println("Determined week: " + week);
 
@@ -40,7 +53,7 @@ public class GetWeeklyResults {
              return new APIGatewayProxyResponseEvent()
                  .withStatusCode(400)
                  .withHeaders(headers)
-                 .withBody(new ObjectMapper().writeValueAsString(Map.of("error", "Could not get week from FBPConfig table")));
+                 .withBody(toJson(Map.of("error", "Could not get week from FBPConfig table")));
         }
 
 
@@ -48,37 +61,85 @@ public class GetWeeklyResults {
         DynamoDbEnhancedClient enhancedClient = DynamoDbEnhancedClient.builder()
             .dynamoDbClient(dynamoDbClient)
             .build();
-
-        DynamoDbTable<FBPPicksResult> table =
-            enhancedClient.table(System.getenv("FBPScheduleTableName"), TableSchema.fromClass(FBPPicksResult.class));
+        // Get the schedule for the week, get the picks for the week, get the results for the week,
+        DynamoDbTable<FBPWeeklyResult> table =
+            enhancedClient.table(System.getenv("FBPWeeklyResultsTableName"), TableSchema.fromClass(FBPWeeklyResult.class));
         try {
-            System.out.println("Querying for schedule sheet for week: " + week);
-            List<FBPPicksResult> picksRows = 
-            table.query(QueryConditional.keyEqualTo(Key.builder().partitionValue(week).build()))
-                .items()
-                .stream()
-                .collect(Collectors.toList());
-            getPicksResultsForAllUsers(week, picksRows);
-            System.out.println("Retrieved " + picksRows.size() + " items from DynamoDB for week " + week);
+            System.out.println("Fetching weekly result sheet for week: " + week);
+            String weekIndexName = System.getenv().getOrDefault("FBPWeeklyResultsWeekIndexName", "WeekIndex");
+            DynamoDbIndex<FBPWeeklyResult> weekIndex = table.index(weekIndexName);
 
-            return new APIGatewayProxyResponseEvent()
-                .withStatusCode(200)
-                .withHeaders(headers)
-                .withBody(new ObjectMapper().writeValueAsString(picksRows));
-        } catch (Exception e) {
-            return new APIGatewayProxyResponseEvent()
-                .withStatusCode(500)
-                .withHeaders(headers)
-                .withBody(new ObjectMapper().writeValueAsString(Map.of("error", e.getMessage())));
+            QueryEnhancedRequest weekQuery = QueryEnhancedRequest.builder()
+                .queryConditional(QueryConditional.keyEqualTo(Key.builder().partitionValue(week).build()))
+                .build();
+
+            List<FBPWeeklyResult> weeklyResultRows = weekIndex.query(weekQuery)
+                .stream()
+                .flatMap(page -> page.items().stream())
+                .collect(Collectors.toList());
+            if (weeklyResultRows != null && !weeklyResultRows.isEmpty()) {
+                System.out.println("Fetched weekly result sheet for week: " + week);
+                System.out.print("Number of rows of Picks:" + weeklyResultRows.size());
+                List<FBPWeeklyResult> sortedRows = weeklyResultRows.stream()
+                    .sorted(Comparator.comparingInt(FBPWeeklyResult::getCorrectPicks)
+                        .reversed()
+                        .thenComparing(FBPWeeklyResult::getIncorrectPicks)
+                        .thenComparing(FBPWeeklyResult::getDisplayName, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(FBPWeeklyResult::getEmail, String.CASE_INSENSITIVE_ORDER))
+                    .collect(Collectors.toList());
+                updateWeeklyResults(week);
+                String sortedRowsJSON = toJson(sortedRows);
+                return response.withStatusCode(200).withBody(sortedRowsJSON);
+            } else {
+                System.out.println("No weekly result sheet found for week: " + week);
+                return response.withStatusCode(404).withBody(toJson(Map.of("error", "No weekly result sheet found for week: " + week)));
+            }
+            }
+        catch (RuntimeException e) {
+            System.out.println("Error fetching weekly result sheet for week: " + week);
+            System.err.println(e.getMessage());
+            return response.withStatusCode(400).withBody(toJson(Map.of("error", "Error fetching weekly result sheet for week: " + week)));
         }
-    }
-    private void getPicksResultsForAllUsers(double week, List<FBPPicksResult> picksRows) throws JsonProcessingException {
+   }         
+
+    //     DynamoDbTable<FBPPicksResult> table =
+    //         enhancedClient.table(System.getenv("FBPScheduleTableName"), TableSchema.fromClass(FBPPicksResult.class));
+    //     try {
+    //         System.out.println("Querying for schedule sheet for week: " + week);
+    //         List<FBPPicksResult> picksRows = 
+    //         table.query(QueryConditional.keyEqualTo(Key.builder().partitionValue(week).build()))
+    //             .items()
+    //             .stream()
+    //             .collect(Collectors.toList());
+    //         setPicksResultsForAllUsers(week, picksRows);
+    //         System.out.println("Retrieved " + picksRows.size() + " items from DynamoDB for week " + week);
+
+    //         return new APIGatewayProxyResponseEvent()
+    //             .withStatusCode(200)
+    //             .withHeaders(headers)
+    //             .withBody(new ObjectMapper().writeValueAsString(picksRows));
+    //     } catch (Exception e) {
+    //         return new APIGatewayProxyResponseEvent()
+    //             .withStatusCode(500)
+    //             .withHeaders(headers)
+    //             .withBody(new ObjectMapper().writeValueAsString(Map.of("error", e.getMessage())));
+    //     }
+    // }
+    private void updateWeeklyResults(double week) throws JsonProcessingException {
+        DynamoDbClient picksResultDynamoDB = DynamoDbClient.builder().build();
+        DynamoDbEnhancedClient picksResultClient = DynamoDbEnhancedClient.builder().dynamoDbClient(picksResultDynamoDB).build();
+        DynamoDbTable<FBPPicksResult> picksResultTable = picksResultClient.
+            table(System.getenv("FBPScheduleTableName"), TableSchema.fromClass(FBPPicksResult.class));
+        List<FBPPicksResult> picksRows = picksResultTable
+            .query(QueryConditional.keyEqualTo(Key.builder().partitionValue(week).build()))
+            .items().stream().collect(Collectors.toList());
+        System.out.println("Retrieved " + picksRows.size() + " game results from schedule table for week " + week);
         // This method will get the picks for all users for the given week and update the FBP-Users table with the results of the picks for each user.
         // You will need to implement this method to get the picks for all users and update the FBP-Users table with the results of the picks for each user.
         // This will be used to display the results of the picks for each user in the frontend.
         
         // Get all users from FBP-Users table
-        ObjectMapper mapper = new ObjectMapper();
+        //ObjectMapper mapper = new ObjectMapper();
         DynamoDbClient dynamoDB = DynamoDbClient.builder().build();
         DynamoDbEnhancedClient enhancedClient = DynamoDbEnhancedClient.builder().dynamoDbClient(dynamoDB).build();
         DynamoDbTable<FBPPicks> picksTable = enhancedClient.table(System.getenv("FBPPicksTableName"), TableSchema.fromClass(FBPPicks.class));

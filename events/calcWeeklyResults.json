@@ -1,6 +1,6 @@
 {
   "httpMethod": "GET",
-  "path": "/getWeeklyResults",
+  "path": "/calcWeeklyResults",
   "headers": {
     "Content-Type": "application/json"
   },
