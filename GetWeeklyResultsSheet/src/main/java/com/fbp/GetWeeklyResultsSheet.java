@@ -42,6 +42,11 @@ public class GetWeeklyResultsSheet {
     }
 
     public APIGatewayProxyResponseEvent getWeeklyResultsSheet(APIGatewayProxyRequestEvent request) {
+        APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent().withHeaders(headers);
+        // Handle OPTIONS preflight request
+        if ("OPTIONS".equals(request.getHttpMethod())) {
+            return response.withStatusCode(200).withBody("");
+        }
         System.out.println("=== Starting getWeeklyResultsSheet() ===");
         Integer week = FBPUtils.getCurrentWeek();
         System.out.println("Determined week: " + week);

@@ -267,7 +267,7 @@ Resources:
       # Remove MemorySize here since it's in Globals
       # Remove Environment here since it's in Globals
       Policies:
-        - DynamoDBReadPolicy:
+        - DynamoDBCrudPolicy:
             TableName: !Ref FBPWeeklyResultsTableName
         - DynamoDBReadPolicy:
             TableName: !Ref FBPConfigTableName
