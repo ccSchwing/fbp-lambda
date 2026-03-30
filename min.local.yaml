@@ -29,12 +29,19 @@ Parameters:
     # Added parameter for logs table
     Type: String
     Default: 2025-Log
+  FBPWeeklyResultsTableName:
+    # Added parameter for weekly results table
+    Type: String
+    Default: FBP-Weekly-Results
+  FBPWeeklyResultsWeekIndexName:
+    Type: String
+    Default: WeekIndex
 
 Resources:
   AddFBPUser:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: AddFBPUser/
+      CodeUri: src/AddFBPUser/
       Handler: com.fbp.AddFBPUser::addFBPUser
       Runtime: java11
       Architectures:
@@ -57,7 +64,7 @@ Resources:
   GetFBPPicks:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: GetFBPPicks/
+      CodeUri: src/GetFBPPicks/
       Handler: com.fbp.GetFBPPicks::getFBPPicks
       Runtime: java11
       Architectures:
@@ -87,10 +94,11 @@ Resources:
           Properties:
             Path: /getFBPPicks
             Method: OPTIONS
+
   GetFBPUser:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: GetFBPUser/
+      CodeUri: src/GetFBPUser/
       Handler: com.fbp.GetFBPUser::getFBPUser
       Runtime: java11
       Architectures:
@@ -114,10 +122,44 @@ Resources:
           Properties:
             Path: /getFBPUser
             Method: OPTIONS
+  GetFBPPicksForUser:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/GetFBPPicksForUser/
+      Handler: com.fbp.GetFBPPicksForUser::getFBPPicksForUser
+      Runtime: java11
+      Architectures:
+        - x86_64
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FBPPicksTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FBPLogsTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPUsersTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPConfigTableName
+      Environment:
+        Variables:
+          FBPPicksTableName: !Ref FBPPicksTableName
+          FBPLogsTableName: !Ref FBPLogsTableName
+          FBPUsersTableName: !Ref FBPUsersTableName
+          FBPConfigTableName: !Ref FBPConfigTableName
+      Events:
+        GetFBPPicksForUser:
+          Type: Api
+          Properties:
+            Path: /getFBPPicksForUser
+            Method: POST
+        GetFBPPicksForUserOptions:
+          Type: Api
+          Properties:
+            Path: /getFBPPicksForUser
+            Method: OPTIONS
   GetPickSheet:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: GetPickSheet/
+      CodeUri: src/GetPickSheet/
       Handler: com.fbp.GetPickSheet::getPickSheet
       Runtime: java11
       Architectures:
@@ -144,11 +186,11 @@ Resources:
           Properties:
             Path: /getPickSheet
             Method: OPTIONS
-  GetScheduleSheet:
+  UpdateFinalScores:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: GetScheduleSheet/
-      Handler: com.fbp.GetScheduleSheet::getScheduleSheet
+      CodeUri: src/UpdateFinalScores/
+      Handler: com.fbp.UpdateFinalScores::updateFinalScores
       Runtime: java11
       Architectures:
         - x86_64
@@ -164,28 +206,30 @@ Resources:
           FBPScheduleTableName: !Ref FBPScheduleTableName
           FBPConfigTableName: !Ref FBPConfigTableName
       Events:
-        GetScheduleSheetGet:
+        UpdateFinalScoresGet:
           Type: Api
           Properties:
-            Path: /getScheduleSheet
+            Path: /updateFinalScores
             Method: GET
-          GetScheduleSheetOptions:
-            Type: Api
-            Properties:
-              Path: /getScheduleSheet
-              Method: OPTIONS
-  GetWeeklyResults:
+        UpdateFinalScoresOptions:
+          Type: Api
+          Properties:
+            Path: /updateFinalScores
+            Method: OPTIONS
+  CalcWeeklyResults:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: GetWeeklyResults/
-      Handler: com.fbp.GetWeeklyResults::getWeeklyResults
+      CodeUri: src/CalcWeeklyResults/
+      Handler: com.fbp.CalcWeeklyResults::calcWeeklyResults
       Runtime: java11
       Architectures:
         - x86_64
       # Remove MemorySize here since it's in Globals
       # Remove Environment here since it's in Globals
       Policies:
-        - DynamoDBReadPolicy:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FBPWeeklyResultsTableName
+        - DynamoDBCrudPolicy:
             TableName: !Ref FBPScheduleTableName
         - DynamoDBReadPolicy:
             TableName: !Ref FBPPicksTableName
@@ -195,26 +239,89 @@ Resources:
             TableName: !Ref FBPUsersTableName
       Environment:
         Variables:
+          FBPWeeklyResultsTableName: !Ref FBPWeeklyResultsTableName
           FBPScheduleTableName: !Ref FBPScheduleTableName
           FBPPicksTableName: !Ref FBPPicksTableName
           FBPConfigTableName: !Ref FBPConfigTableName
           FBPUsersTableName: !Ref FBPUsersTableName
+          FBPWeeklyResultsWeekIndexName: !Ref FBPWeeklyResultsWeekIndexName
       Events:
-        GetWeeklyResultsGet:
+        CalcWeeklyResultsGet:
           Type: Api
           Properties:
-            Path: /getWeeklyResults
+            Path: /calcWeeklyResults
             Method: GET
-          GetWeeklyResultsOptions:
-            Type: Api
-            Properties:
-              Path: /getWeeklyResults
-              Method: OPTIONS
+        CalcWeeklyResultsOptions:
+          Type: Api
+          Properties:
+            Path: /calcWeeklyResults
+            Method: OPTIONS
+            Resources:
+  GetPreSignedUrl:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: com.fbp.getpresignedurl.GetPreSignedUrlHandler::handleRequest
+      Runtime: java11
+      CodeUri: src/GetPreSignedUrl/
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Ref S3BucketName
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref S3BucketName
+      Events:
+        GetPresignedUrl:
+          Type: Api
+          Properties:
+            Path: /presigned-url
+            Method: get
+        GetPresignedUrlOptions:
+          Type: Api
+          Properties:
+            Path: /presigned-url
+            Method: options
 
-    SaveContent:
+  GetWeeklyResultsSheet:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/GetWeeklyResultsSheet/
+      Handler: com.fbp.GetWeeklyResultsSheet::getWeeklyResultsSheet
+      Runtime: java11
+      Architectures:
+        - x86_64
+      # Remove MemorySize here since it's in Globals
+      # Remove Environment here since it's in Globals
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FBPWeeklyResultsTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPConfigTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPUsersTableName
+        - S3WritePolicy:
+            BucketName: my-fbp.com
+      Environment:
+        Variables:
+          FBPWeeklyResultsTableName: !Ref FBPWeeklyResultsTableName
+          FBPWeeklyResultsWeekIndexName: !Ref FBPWeeklyResultsWeekIndexName
+          FBPConfigTableName: !Ref FBPConfigTableName  
+          BUCKET_NAME: my-fbp.com
+      Events:
+        GetWeeklyResultsSheetGet:
+          Type: Api
+          Properties:
+            Path: /getWeeklyResultsSheet
+            Method: GET
+        GetWeeklyResultsSheetOptions:
+          Type: Api
+          Properties:
+            Path: /getWeeklyResultsSheet
+            Method: OPTIONS
+
+  SaveContent:
       Type: AWS::Serverless::Function
       Properties:
-        CodeUri: SaveContent/
+        CodeUri: src/SaveContent/
         Handler: com.fbp.SaveContent::handleRequest
         Runtime: java11
         Architectures:
@@ -238,11 +345,11 @@ Resources:
             Properties:
               Path: /save-content
               Method: OPTIONS
-      ContentSaverDashboard:
-        Type: AWS::CloudWatch::Dashboard
-        Properties:
-        DashboardName: !Sub ${AWS::StackName}
-        DashboardBody: !Sub |
+  ContentSaverDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub ${AWS::StackName}
+      DashboardBody: !Sub |
           {
             "widgets": [
               {
@@ -275,42 +382,40 @@ Resources:
               }
             ]
           }
-    SaveFBPPicks:
-      Type: AWS::Serverless::Function
-      Properties:
-        CodeUri: SaveFBPPicks/
-        Handler: com.fbp.SaveFBPPicks::saveFBPPicks
-        Runtime: java11
-        # AutoPublishAlias: live
-        SnapStart: null # ApplyOn: PublishedVersions
-        Architectures:
-          - x86_64
-        Policies:
-          - DynamoDBCrudPolicy:
-              TableName: !Ref FBPPicksTableName
-          - DynamoDBCrudPolicy:
-              TableName: !Ref FBPLogsTableName
-          - DynamoDBReadPolicy:
-              TableName: !Ref FBPUsersTableName
-          - DynamoDBReadPolicy:
-              TableName: !Ref FBPConfigTableName
-        Environment:
-          Variables:
-            FBPPicksTableName: !Ref FBPPicksTableName
-            FBPLogsTableName: !Ref FBPLogsTableName
-            FBPUsersTableName: !Ref FBPUsersTableName
-            FBPConfigTableName: !Ref FBPConfigTableName
-        Events:
-          SaveFBPPicks:
-            Type: Api
-            Properties:
-              Path: /saveFBPPicks
-              Method: POST
-          SaveFBPPicksOptions:
-            Type: Api
-            Properties:
-              Path: /saveFBPPicks
-              Method: OPTIONS
+  SaveFBPPicks:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/SaveFBPPicks/
+      Handler: com.fbp.SaveFBPPicks::saveFBPPicks
+      Runtime: java11
+      Architectures:
+        - x86_64
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FBPPicksTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FBPLogsTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPUsersTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPConfigTableName
+      Environment:
+        Variables:
+          FBPPicksTableName: !Ref FBPPicksTableName
+          FBPLogsTableName: !Ref FBPLogsTableName
+          FBPUsersTableName: !Ref FBPUsersTableName
+          FBPConfigTableName: !Ref FBPConfigTableName
+      Events:
+        SaveFBPPicks:
+          Type: Api
+          Properties:
+            Path: /saveFBPPicks
+            Method: POST
+        SaveFBPPicksOptions:
+          Type: Api
+          Properties:
+            Path: /saveFBPPicks
+            Method: OPTIONS
 
 Outputs:
     ApiUrl:
@@ -372,11 +477,43 @@ Outputs:
       Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getFBPPicks
       Export:
         Name: !Sub ${AWS::StackName}-GetFBPPicksApi
-    GetWeeklyResultsFunction:
-      Description: GetWeeklyResults Lambda Function ARN
-      Value: !GetAtt GetWeeklyResults.Arn
-    GetWeeklyResultsApi:
-      Description: GetWeeklyResults API Endpoint
-      Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getWeeklyResults
+    GetFBPPkicksForUserFunction:
+      Description: GetFBPPicksForUser Lambda Function ARN
+      Value: !GetAtt GetFBPPicksForUser.Arn
+    GetFBPPicksForUserApi:
+      Description: GetFBPPicksForUser API Endpoint
+      Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getFBPPicksForUser
       Export:
-        Name: !Sub ${AWS::StackName}-GetWeeklyResultsApi
+        Name: !Sub ${AWS::StackName}-GetFBPPicksForUserApi
+    GetPreSignedUrlFunction:
+      Description: GetPreSignedUrl Lambda Function ARN
+      Value: !GetAtt GetPreSignedUrl.Arn
+    GetPreSignedUrlApi:
+      Description: GetPreSignedUrl API Endpoint
+      Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/presigned-url
+      Export:
+        Name: !Sub ${AWS::StackName}-GetPreSignedUrlApi
+    CalcWeeklyResultsFunction:
+      Description: CalcWeeklyResults Lambda Function ARN
+      Value: !GetAtt CalcWeeklyResults.Arn
+    CalcWeeklyResultsApi:
+      Description: CalcWeeklyResults API Endpoint
+      Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/calcWeeklyResults
+      Export:
+        Name: !Sub ${AWS::StackName}-CalcWeeklyResultsApi
+    GetWeeklyResultsSheetFunction:
+      Description: GetWeeklyResultsSheet Lambda Function ARN
+      Value: !GetAtt GetWeeklyResultsSheet.Arn
+    GetWeeklyResultsSheetApi:
+      Description: GetWeeklyResultsSheet API Endpoint
+      Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getWeeklyResultsSheet
+      Export:
+        Name: !Sub ${AWS::StackName}-GetWeeklyResultsSheetApi
+    UpdateFinalScoresFunction:
+      Description: UpdateFinalScores Lambda Function ARN
+      Value: !GetAtt UpdateFinalScores.Arn
+    UpdateFinalScoresApi:
+      Description: UpdateFinalScores API Endpoint
+      Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/updateFinalScores
+      Export:
+        Name: !Sub ${AWS::StackName}-UpdateFinalScoresApi
