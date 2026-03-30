@@ -19,8 +19,9 @@
         <module>GetFBPPicks</module>
         <module>GetFBPPicksForUser</module>
         <module>CalcWeeklyResults</module>
-        <module>UpdateWeeklyResults</module>
+        <module>UpdateFinalScores</module>
         <module>GetWeeklyResultsSheet</module>
+        <module>GetPreSignedUrl</module>
         <!-- Add other lambda modules here -->
     </modules>
     

@@ -87,6 +87,9 @@ public class GetWeeklyResultsSheet {
             if (!picksRows.isEmpty()) {
                 picksRows.get(0).setWinner(true);
             }
+
+            // Copy to S3 bucket for front end to access.
+            FBPUtils.copyToS3(toJson(picksRows), "fbp-admin/weekly-results-sheet.json");
             // Update the winner field in DynamoDB for the top player.
             for (FBPWeeklyResult result : picksRows) {
                 if (result.getWinner() != null && result.getWinner()) {

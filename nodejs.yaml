@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: S3 Presigned URL Generator
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: nodejs20.x
+    Environment:
+      Variables:
+        S3_BUCKET_NAME: !Ref S3BucketName
+
+Parameters:
+  S3BucketName:
+    Type: String
+    Description: Name of the S3 bucket containing your files
+    Default: my-fbp.com
+
+Resources:
+  # API Gateway
+  PresignedUrlApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'https://my-fbp.com'"  # Replace with your domain
+        MaxAge: "'600'"
+
+  # Lambda Function
+  GetPresignedUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: getPreSignedURL.handler
+      Runtime: nodejs20.x
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref S3BucketName
+      Events:
+        GetPresignedUrl:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PresignedUrlApi
+            Path: /presigned-url
+            Method: get
+
+Outputs:
+  ApiUrl:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${PresignedUrlApi}.execute-api.${AWS::Region}.amazonaws.com/prod/presigned-url"
+  
+  FunctionArn:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt GetPresignedUrlFunction.Arn

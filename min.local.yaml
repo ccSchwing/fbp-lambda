@@ -41,7 +41,7 @@ Resources:
   AddFBPUser:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: AddFBPUser/
+      CodeUri: src/AddFBPUser/
       Handler: com.fbp.AddFBPUser::addFBPUser
       Runtime: java11
       Architectures:
@@ -64,7 +64,7 @@ Resources:
   GetFBPPicks:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: GetFBPPicks/
+      CodeUri: src/GetFBPPicks/
       Handler: com.fbp.GetFBPPicks::getFBPPicks
       Runtime: java11
       Architectures:
@@ -98,7 +98,7 @@ Resources:
   GetFBPUser:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: GetFBPUser/
+      CodeUri: src/GetFBPUser/
       Handler: com.fbp.GetFBPUser::getFBPUser
       Runtime: java11
       Architectures:
@@ -125,7 +125,7 @@ Resources:
   GetFBPPicksForUser:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: GetFBPPicksForUser/
+      CodeUri: src/GetFBPPicksForUser/
       Handler: com.fbp.GetFBPPicksForUser::getFBPPicksForUser
       Runtime: java11
       Architectures:
@@ -159,7 +159,7 @@ Resources:
   GetPickSheet:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: GetPickSheet/
+      CodeUri: src/GetPickSheet/
       Handler: com.fbp.GetPickSheet::getPickSheet
       Runtime: java11
       Architectures:
@@ -186,11 +186,11 @@ Resources:
           Properties:
             Path: /getPickSheet
             Method: OPTIONS
-  UpdateWeeklyResults:
+  UpdateFinalScores:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: UpdateWeeklyResults/
-      Handler: com.fbp.UpdateWeeklyResults::calcWeeklyGameResults
+      CodeUri: src/UpdateFinalScores/
+      Handler: com.fbp.UpdateFinalScores::updateFinalScores
       Runtime: java11
       Architectures:
         - x86_64
@@ -206,20 +206,20 @@ Resources:
           FBPScheduleTableName: !Ref FBPScheduleTableName
           FBPConfigTableName: !Ref FBPConfigTableName
       Events:
-        UpdateWeeklyResultsGet:
+        UpdateFinalScoresGet:
           Type: Api
           Properties:
-            Path: /updateWeeklyResults
+            Path: /updateFinalScores
             Method: GET
-        UpdateWeeklyResultsOptions:
+        UpdateFinalScoresOptions:
           Type: Api
           Properties:
-            Path: /updateWeeklyResults
+            Path: /updateFinalScores
             Method: OPTIONS
   CalcWeeklyResults:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: CalcWeeklyResults/
+      CodeUri: src/CalcWeeklyResults/
       Handler: com.fbp.CalcWeeklyResults::calcWeeklyResults
       Runtime: java11
       Architectures:
@@ -256,10 +256,35 @@ Resources:
           Properties:
             Path: /calcWeeklyResults
             Method: OPTIONS
+            Resources:
+  GetPreSignedUrl:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: com.fbp.getpresignedurl.GetPreSignedUrlHandler::handleRequest
+      Runtime: java11
+      CodeUri: src/GetPreSignedUrl/
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Ref S3BucketName
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref S3BucketName
+      Events:
+        GetPresignedUrl:
+          Type: Api
+          Properties:
+            Path: /presigned-url
+            Method: get
+        GetPresignedUrlOptions:
+          Type: Api
+          Properties:
+            Path: /presigned-url
+            Method: options
+
   GetWeeklyResultsSheet:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: GetWeeklyResultsSheet/
+      CodeUri: src/GetWeeklyResultsSheet/
       Handler: com.fbp.GetWeeklyResultsSheet::getWeeklyResultsSheet
       Runtime: java11
       Architectures:
@@ -273,11 +298,14 @@ Resources:
             TableName: !Ref FBPConfigTableName
         - DynamoDBReadPolicy:
             TableName: !Ref FBPUsersTableName
+        - S3WritePolicy:
+            BucketName: my-fbp.com
       Environment:
         Variables:
           FBPWeeklyResultsTableName: !Ref FBPWeeklyResultsTableName
           FBPWeeklyResultsWeekIndexName: !Ref FBPWeeklyResultsWeekIndexName
-          FBPConfigTableName: !Ref FBPConfigTableName
+          FBPConfigTableName: !Ref FBPConfigTableName  
+          BUCKET_NAME: my-fbp.com
       Events:
         GetWeeklyResultsSheetGet:
           Type: Api
@@ -293,7 +321,7 @@ Resources:
   SaveContent:
       Type: AWS::Serverless::Function
       Properties:
-        CodeUri: SaveContent/
+        CodeUri: src/SaveContent/
         Handler: com.fbp.SaveContent::handleRequest
         Runtime: java11
         Architectures:
@@ -357,11 +385,9 @@ Resources:
   SaveFBPPicks:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: SaveFBPPicks/
+      CodeUri: src/SaveFBPPicks/
       Handler: com.fbp.SaveFBPPicks::saveFBPPicks
       Runtime: java11
-      # AutoPublishAlias: live
-      SnapStart: null # ApplyOn: PublishedVersions
       Architectures:
         - x86_64
       Policies:
@@ -451,14 +477,6 @@ Outputs:
       Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getFBPPicks
       Export:
         Name: !Sub ${AWS::StackName}-GetFBPPicksApi
-    UpdateWeeklyResultsFunction:
-      Description: UpdateWeeklyResults Lambda Function ARN
-      Value: !GetAtt UpdateWeeklyResults.Arn
-    UpdateWeeklyResultsApi:
-      Description: UpdateWeeklyResults API Endpoint
-      Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/updateWeeklyResults
-      Export:
-        Name: !Sub ${AWS::StackName}-UpdateWeeklyResultsApi
     GetFBPPkicksForUserFunction:
       Description: GetFBPPicksForUser Lambda Function ARN
       Value: !GetAtt GetFBPPicksForUser.Arn
@@ -467,3 +485,35 @@ Outputs:
       Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getFBPPicksForUser
       Export:
         Name: !Sub ${AWS::StackName}-GetFBPPicksForUserApi
+    GetPreSignedUrlFunction:
+      Description: GetPreSignedUrl Lambda Function ARN
+      Value: !GetAtt GetPreSignedUrl.Arn
+    GetPreSignedUrlApi:
+      Description: GetPreSignedUrl API Endpoint
+      Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/presigned-url
+      Export:
+        Name: !Sub ${AWS::StackName}-GetPreSignedUrlApi
+    CalcWeeklyResultsFunction:
+      Description: CalcWeeklyResults Lambda Function ARN
+      Value: !GetAtt CalcWeeklyResults.Arn
+    CalcWeeklyResultsApi:
+      Description: CalcWeeklyResults API Endpoint
+      Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/calcWeeklyResults
+      Export:
+        Name: !Sub ${AWS::StackName}-CalcWeeklyResultsApi
+    GetWeeklyResultsSheetFunction:
+      Description: GetWeeklyResultsSheet Lambda Function ARN
+      Value: !GetAtt GetWeeklyResultsSheet.Arn
+    GetWeeklyResultsSheetApi:
+      Description: GetWeeklyResultsSheet API Endpoint
+      Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getWeeklyResultsSheet
+      Export:
+        Name: !Sub ${AWS::StackName}-GetWeeklyResultsSheetApi
+    UpdateFinalScoresFunction:
+      Description: UpdateFinalScores Lambda Function ARN
+      Value: !GetAtt UpdateFinalScores.Arn
+    UpdateFinalScoresApi:
+      Description: UpdateFinalScores API Endpoint
+      Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/updateFinalScores
+      Export:
+        Name: !Sub ${AWS::StackName}-UpdateFinalScoresApi
