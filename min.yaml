@@ -150,11 +150,11 @@ Resources:
           Properties:
             Path: /getFBPUser
             Method: OPTIONS
-  GetFBPPicksForUser:
+  GetAllFBPPicks:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/GetFBPPicksForUser/target/GetFBPPicksForUser-1.0.jar
-      Handler: com.fbp.GetFBPPicksForUser::getFBPPicksForUser
+      CodeUri: src/GetAllFBPPicks/target/GetAllFBPPicks-1.0.jar
+      Handler: com.fbp.GetAllFBPPicks::getAllFBPPicks
       Runtime: java11
       Architectures:
         - x86_64
@@ -174,16 +174,17 @@ Resources:
           FBPUsersTableName: !Ref FBPUsersTableName
           FBPConfigTableName: !Ref FBPConfigTableName
       Events:
-        GetFBPPicksForUser:
+        GetAllFBPPicks:
           Type: Api
           Properties:
-            Path: /getFBPPicksForUser
-            Method: POST
-        GetFBPPicksForUserOptions:
+            Path: /getAllFBPPicks
+            Method: GET
+        GetAllFBPPicksOptions:
           Type: Api
           Properties:
-            Path: /getFBPPicksForUser
+            Path: /getAllFBPPicks
             Method: OPTIONS
+            
   GetPickSheet:
     Type: AWS::Serverless::Function
     Properties:
@@ -490,14 +491,6 @@ Outputs:
       Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/updateFinalScores
       Export:
         Name: !Sub ${AWS::StackName}-UpdateWeeklyResultsApi
-    GetFBPPkicksForUserFunction:
-      Description: GetFBPPicksForUser Lambda Function ARN
-      Value: !GetAtt GetFBPPicksForUser.Arn
-    GetFBPPicksForUserApi:
-      Description: GetFBPPicksForUser API Endpoint
-      Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getFBPPicksForUser
-      Export:
-        Name: !Sub ${AWS::StackName}-GetFBPPicksForUserApi
     GetWeeklyResults:
       Description: GetWeeklyResultsSheet Lambda Function ARN
       Value: !GetAtt GetWeeklyResultsSheet.Arn
@@ -514,3 +507,13 @@ Outputs:
       Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/presigned-url
       Export:
         Name: !Sub ${AWS::StackName}-GetPreSignedUrlApi
+    GetAllFBPPicksFunction:
+      Description: GetAllFBPPicks Lambda Function ARN
+      Value: !GetAtt GetAllFBPPicks.Arn
+      Export:
+        Name: !Sub ${AWS::StackName}-GetAllFBPPicksFunction
+    GetAllFBPPicksApi:
+      Description: GetAllFBPPicks API Endpoint
+      Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getAllFBPPicks
+      Export:
+        Name: !Sub ${AWS::StackName}-GetAllFBPPicksApi

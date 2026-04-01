@@ -484,7 +484,7 @@ Outputs:
       Description: GetAllFBPPicks API Endpoint
       Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getAllFBPPicks
       Export:
-        Name: !Sub ${AWS::StackName}-GetFBPPicksForUserApi
+        Name: !Sub ${AWS::StackName}-GetAllFBPPicksApi
     GetPreSignedUrlFunction:
       Description: GetPreSignedUrl Lambda Function ARN
       Value: !GetAtt GetPreSignedUrl.Arn
