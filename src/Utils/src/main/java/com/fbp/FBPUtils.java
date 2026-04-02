@@ -180,22 +180,25 @@ public class FBPUtils {
         try {
             ZoneId nyZone = ZoneId.of("America/New_York");
             DateTimeFormatter skFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-
-            String sortKeyDate = (logCurrentAction.getDate() != null)
+            logCurrentAction.setDate(new java.util.Date());
+            String timestamp = (logCurrentAction.getDate() != null)
                     ? logCurrentAction.getDate().toInstant().atZone(nyZone).format(skFormatter)
                     : ZonedDateTime.now(nyZone).format(skFormatter);
+            System.out.println("logAction - timestamp: " + logCurrentAction.getDate());
+
+            // Using composite key: email (partition key) + timestamp (sort key)
             PutItemRequest putItemRequest = PutItemRequest.builder()
                     .tableName(tableName)
                     .item(java.util.Map.of(
                             "email", AttributeValue.builder().s(logCurrentAction.getEmail()).build(),
+                            "timestamp", AttributeValue.builder().s(timestamp).build(),
                             "week", AttributeValue.builder().s(logCurrentAction.getWeek()).build(),
-                            "timestamp", AttributeValue.builder().s(sortKeyDate).build(),
                             "level", AttributeValue.builder().s(logCurrentAction.getLevel()).build(),
                             "action", AttributeValue.builder().s(logCurrentAction.getAction()).build(),
                             "details", AttributeValue.builder().s(logCurrentAction.getDetails()).build()))
                     .build();
             dynamoDB.putItem(putItemRequest);
-            // Implement logging logic here, e.g., write to DynamoDB or CloudWatch
+            System.out.println("Successfully logged action with composite key - email: " + logCurrentAction.getEmail() + ", timestamp: " + timestamp);
         } catch (Exception e) {
             System.err.println("Failed to log action: " + e.getMessage());
         }

@@ -57,10 +57,13 @@ Resources:
             TableName: !Ref FBPUsersTableName
         - DynamoDBReadPolicy:
             TableName: !Ref FBPConfigTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPLogsTableName
       Environment:
         Variables:
           FBPUsersTableName: !Ref FBPUsersTableName
           FBPConfigTableName: !Ref FBPConfigTableName
+          FBPLogsTableName: !Ref FBPLogsTableName
   GetFBPPicks:
     Type: AWS::Serverless::Function
     Properties:

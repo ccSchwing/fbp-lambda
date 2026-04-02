@@ -16,28 +16,33 @@ import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 public class AddFBPUser {
     public APIGatewayProxyResponseEvent addFBPUser(APIGatewayProxyRequestEvent request)
             throws JsonMappingException, JsonProcessingException {
-            APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
-    
-    // Add CORS headers to ALL responses
-    Map<String, String> headers = new HashMap<>();
-    headers.put("Access-Control-Allow-Origin", "*");
-    headers.put("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-    headers.put("Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token");
-    response.setHeaders(headers);
-    
-    // Handle OPTIONS preflight request
-    if ("OPTIONS".equals(request.getHttpMethod())) {
-        response.setStatusCode(200);
-        response.setBody("");
-        return response;
-    }
+        APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
+
+        // Add CORS headers to ALL responses
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Access-Control-Allow-Origin", "*");
+        headers.put("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+        headers.put("Access-Control-Allow-Headers",
+                "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token");
+        response.setHeaders(headers);
+
+        // Handle OPTIONS preflight request
+        if ("OPTIONS".equals(request.getHttpMethod())) {
+            response.setStatusCode(200);
+            response.setBody("");
+            return response;
+        }
+        String body = request.getBody();
+        ObjectMapper objectMapper = new ObjectMapper();
+        FBPUser fbpUser = objectMapper.readValue(body, FBPUser.class);
+        System.out.println("parsed user=" + fbpUser);
+        System.out.println("FBPUser to add: " + fbpUser.toString());
         try {
             System.out.println("=== Environment Variables ===");
             System.getenv().forEach((key, value) -> System.out.println(key + " = " + value));
             System.out.println("=============================");
             System.out.println("=============================");
             // ...existing code...
-            String body = request.getBody();
             Boolean b64 = request.getIsBase64Encoded();
             System.out.println("isBase64Encoded=" + b64);
             System.out.println("body length=" + (body == null ? 0 : body.length()));
@@ -48,14 +53,6 @@ public class AddFBPUser {
 
             System.out.println(
                     "body preview=" + (body == null ? "null" : body.substring(0, Math.min(body.length(), 300))));
-
-            ObjectMapper objectMapper = new ObjectMapper();
-            FBPUser fbpUser = objectMapper.readValue(body, FBPUser.class);
-            System.out.println("parsed user=" + fbpUser);
-            // ...existing code...
-            // ObjectMapper objectMapper = new ObjectMapper();
-            // FBPUser fbpUser = objectMapper.readValue(request.getBody(), FBPUser.class);
-            System.out.println("FBPUser to add: " + fbpUser.toString());
 
             DynamoDbClient dynamoDB = DynamoDbClient.builder().build();
 
@@ -116,7 +113,8 @@ public class AddFBPUser {
                 exprValues.put(":emailGridSheet", AttributeValue.builder().bool(fbpUser.getEmailGridSheet()).build());
                 first = false;
             }
-            // Admin-only fields — only written when explicitly provided (e.g., during new-user creation by an admin)
+            // Admin-only fields — only written when explicitly provided (e.g., during
+            // new-user creation by an admin)
             if (fbpUser.getIsAdmin() != null) {
                 updateExpr.append(first ? "" : ", ").append("#isAdmin = :isAdmin");
                 exprNames.put("#isAdmin", "isAdmin");
@@ -137,6 +135,8 @@ public class AddFBPUser {
             }
 
             if (first) {
+                logAction(fbpUser.getEmail(), "Add/Update User", "No updatable fields provided for user: " + fbpUser.getEmail() + ". Request body may be missing or malformed.",
+                        "WARN");
                 return new APIGatewayProxyResponseEvent().withStatusCode(400)
                         .withHeaders(Map.of(
                                 "Access-Control-Allow-Origin", "*",
@@ -154,7 +154,8 @@ public class AddFBPUser {
                     .expressionAttributeValues(exprValues)
                     .build();
             dynamoDB.updateItem(updateItemRequest);
-            System.out.println("Table Name from ENV: " + tableName);
+            logAction(fbpUser.getEmail(), "Add/Update User", "User " + fbpUser.getDisplayName() + " new/updated config:" + body,
+                    "INFO");
             return new APIGatewayProxyResponseEvent().withStatusCode(200)
                     .withHeaders(Map.of(
                             "Access-Control-Allow-Origin", "*",
@@ -163,6 +164,8 @@ public class AddFBPUser {
                             "Access-Control-Allow-Methods", "POST,OPTIONS"))
                     .withBody("User added successfully");
         } catch (Exception e) {
+            logAction(fbpUser.getEmail(), "Add/Update User",
+                    "Error adding/updating user: " + fbpUser.getDisplayName() + ". Exception: " + e.getMessage(), "ERROR");
             return new APIGatewayProxyResponseEvent().withStatusCode(500)
                     .withHeaders(Map.of(
                             "Access-Control-Allow-Origin", "*",
@@ -171,5 +174,16 @@ public class AddFBPUser {
                             "Access-Control-Allow-Methods", "POST,OPTIONS"))
                     .withBody("Error processing order: " + e.getMessage());
         }
+    }
+
+    private void logAction(String email, String action, String details, String level) {
+        FBPLogAction logAction = new FBPLogAction();
+        logAction.setEmail(email);
+        logAction.setAction(action);
+        logAction.setDetails(details);
+        logAction.setLevel(level);
+        String week = FBPUtils.getCurrentWeek().toString();
+        logAction.setWeek(week);
+        FBPUtils.logAction(logAction);
     }
 }
