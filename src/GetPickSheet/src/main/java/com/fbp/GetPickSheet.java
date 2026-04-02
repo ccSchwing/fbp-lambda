@@ -18,6 +18,12 @@ import software.amazon.awssdk.enhanced.dynamodb.model.PageIterable;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
+
+/*
+ * This class is responsible for retrieving the Schedule sheet for the current week.
+ * The schedule sheet contains the list of games for the current week.
+ * The pick sheet is returned as a JSON object.
+  */
 public class GetPickSheet {
     public APIGatewayProxyResponseEvent getPickSheet(APIGatewayProxyRequestEvent request)
             throws JsonProcessingException {
@@ -25,6 +31,7 @@ public class GetPickSheet {
         APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
         Map<String, String> headers = new HashMap<>();
         headers.put("Access-Control-Allow-Origin", "*");
+        headers.put("Content-type", "application/json");
         headers.put("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
         headers.put("Access-Control-Allow-Headers",
                 "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token");
