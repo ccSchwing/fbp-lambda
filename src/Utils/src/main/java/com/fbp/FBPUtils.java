@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
+import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
@@ -15,8 +16,13 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
+import software.amazon.awssdk.services.lambda.LambdaClient;
+import software.amazon.awssdk.services.lambda.model.InvokeRequest;
+import software.amazon.awssdk.services.lambda.model.InvokeResponse;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class FBPUtils {
     public static Integer getCurrentWeek() {
@@ -180,22 +186,25 @@ public class FBPUtils {
         try {
             ZoneId nyZone = ZoneId.of("America/New_York");
             DateTimeFormatter skFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-
-            String sortKeyDate = (logCurrentAction.getDate() != null)
+            logCurrentAction.setDate(new java.util.Date());
+            String timestamp = (logCurrentAction.getDate() != null)
                     ? logCurrentAction.getDate().toInstant().atZone(nyZone).format(skFormatter)
                     : ZonedDateTime.now(nyZone).format(skFormatter);
+            System.out.println("logAction - timestamp: " + logCurrentAction.getDate());
+
+            // Using composite key: email (partition key) + timestamp (sort key)
             PutItemRequest putItemRequest = PutItemRequest.builder()
                     .tableName(tableName)
                     .item(java.util.Map.of(
                             "email", AttributeValue.builder().s(logCurrentAction.getEmail()).build(),
+                            "timestamp", AttributeValue.builder().s(timestamp).build(),
                             "week", AttributeValue.builder().s(logCurrentAction.getWeek()).build(),
-                            "timestamp", AttributeValue.builder().s(sortKeyDate).build(),
                             "level", AttributeValue.builder().s(logCurrentAction.getLevel()).build(),
                             "action", AttributeValue.builder().s(logCurrentAction.getAction()).build(),
                             "details", AttributeValue.builder().s(logCurrentAction.getDetails()).build()))
                     .build();
             dynamoDB.putItem(putItemRequest);
-            // Implement logging logic here, e.g., write to DynamoDB or CloudWatch
+            System.out.println("Successfully logged action with composite key - email: " + logCurrentAction.getEmail() + ", timestamp: " + timestamp);
         } catch (Exception e) {
             System.err.println("Failed to log action: " + e.getMessage());
         }
@@ -216,6 +225,28 @@ public class FBPUtils {
             System.out.println("Successfully copied results to S3: s3://" + bucketName + s3Key);
         } catch (Exception e) {
             System.err.println("Failed to copy results to S3: " + e.getMessage());
+        }
+    }
+
+    public static JsonNode getPoolConfig() {
+        try {
+            String functionName = System.getenv("GET_POOL_CONFIG_FUNCTION");
+            if (functionName == null || functionName.isEmpty()) {
+                functionName = "GetPoolConfig";
+            }
+            LambdaClient lambdaClient = LambdaClient.create();
+            InvokeRequest request = InvokeRequest.builder()
+                    .functionName(functionName)
+                    .payload(SdkBytes.fromUtf8String("{}"))
+                    .build();
+            InvokeResponse response = lambdaClient.invoke(request);
+            String responseJson = response.payload().asUtf8String();
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(responseJson);
+            return mapper.readTree(root.get("body").asText());
+        } catch (Exception e) {
+            System.err.println("EXCEPTION in getPoolConfig(): " + e.getMessage());
+            return null;
         }
     }
 }
