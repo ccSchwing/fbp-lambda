@@ -59,7 +59,25 @@ Resources:
           Properties:
             Path: /getPoolOpen
             Method: GET
-
+  GetFBPPicksPython:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/GetFBPPicksPython/src/
+      Handler: GetFBPPicksPython.lambda_handler
+      Runtime: python3.14
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPPicksTableName
+      Environment:
+        Variables:
+          FBPPicksTableName: !Ref FBPPicksTableName
+      Events:
+        GetFBPPicks:
+          Type: Api
+          Properties:
+            Path: /getFBPPicksPython
+            Method: GET
+  
   GetPoolConfig:
     Type: AWS::Serverless::Function
     Properties:
@@ -598,6 +616,14 @@ Outputs:
       Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/
       Export:
         Name: !Sub ${AWS::StackName}-ApiUrl
+    GetFBPPicksPythonFunction:
+      Description: GetFBPPicksPython Lambda Function ARN
+      Value: !GetAtt GetFBPPicksPython.Arn
+    GetFBPPicksPythonApi:
+      Description: GetFBPPicksPython API Endpoint
+      Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getFBPPicksPython
+      Export:
+        Name: !Sub ${AWS::StackName}-GetFBPPicksPythonApi
     GetPoolConfigFunction:
       Description: GetPoolConfig Lambda Function ARN
       Value: !GetAtt GetPoolConfig.Arn

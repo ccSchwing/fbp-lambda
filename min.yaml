@@ -113,7 +113,24 @@ Resources:
           Properties:
             Path: /getFBPUserPython
             Method: POST
-
+  GetFBPPicksPython:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/GetFBPPicksPython/src/
+      Handler: GetFBPPicksPython.lambda_handler
+      Runtime: python3.14
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPPicksTableName
+      Environment:
+        Variables:
+          FBPPicksTableName: !Ref FBPPicksTableName
+      Events:
+        GetFBPPicksPython:
+          Type: Api
+          Properties:
+            Path: /getFBPPicksPython
+            Method: POST
   GetPreSignedUrl:
     Type: AWS::Serverless::Function
     Properties:
@@ -579,6 +596,14 @@ Outputs:
       Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/
       Export:
         Name: !Sub ${AWS::StackName}-ApiUrl
+    GetFBPPicksPythonFunction:
+      Description: GetFBPPicksPython Lambda Function ARN
+      Value: !GetAtt GetFBPPicksPython.Arn
+    GetFBPPicksPythonApi:
+      Description: GetFBPPicksPython API Endpoint
+      Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getFBPPicksPython
+      Export:
+        Name: !Sub ${AWS::StackName}-GetFBPPicksPythonApi
     GetPoolOpenFunction:
       Description: GetPoolOpen Lambda Function ARN
       Value: !GetAtt GetPoolOpenEvent.Arn
