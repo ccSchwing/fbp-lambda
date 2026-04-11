@@ -1,0 +1,36 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/pyright/main/packages/vscode-pyright/schemas/pyrightconfig.schema.json",
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.14",
+  "typeCheckingMode": "strict",
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "**/.aws-sam",
+    "**/target",
+    "LambdaTemplates",
+    "UsefulInfo"
+  ],
+  "executionEnvironments": [
+    {
+      "root": "src",
+      "extraPaths": [
+        "src"
+      ]
+    }
+  ],
+  "reportMissingImports": "error",
+  "reportMissingModuleSource": "warning",
+  "reportUndefinedVariable": "error",
+  "reportAttributeAccessIssue": "error",
+  "reportCallIssue": "error",
+  "reportOptionalMemberAccess": "error",
+  "reportOptionalCall": "error",
+  "reportOptionalSubscript": "error",
+  "reportArgumentType": "error",
+  "reportUnknownVariableType": "warning",
+  "reportUnknownMemberType": "warning",
+  "reportUnknownArgumentType": "warning"
+}
