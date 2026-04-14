@@ -105,6 +105,42 @@ Resources:
             Method: OPTIONS
             PayloadFormatVersion: "2.0"
 
+  CalcWeeklyResultsPython:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/CalcWeeklyResultsPython/src/
+      Handler: CalcWeeklyResults.lambda_handler
+      Runtime: python3.14
+      MemorySize: 1024
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FBPConfigTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPScheduleTableName
+      Environment:
+        Variables:
+          FBPConfigTableName: !Ref FBPConfigTableName
+          FBPScheduleTableName: !Ref FBPScheduleTableName
+      Layers: 
+        - !Ref FBPLibLayer
+      Events:
+        CalcWeeklyResultsGET:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyHttpApi
+            Path: /calcWeeklyResults
+            Method: GET
+            PayloadFormatVersion: "2.0"
+        CalcWeeklyResultsOptions:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyHttpApi
+            Path: /calcWeeklyResults
+            Method: OPTIONS
+            PayloadFormatVersion: "2.0"
+  
+
+
   SetPoolStatusClosed:
     Type: AWS::Serverless::Function
     Properties:
@@ -798,6 +834,14 @@ Outputs:
       Value: !Ref MyHttpApi
       Export:
         Name: !Sub ${AWS::StackName}-HttpApiId
+    CalcWeeklyResultsPythonFunction:
+      Description: CalcWeeklyResultsPython Lambda Function ARN
+      Value: !GetAtt CalcWeeklyResultsPython.Arn
+    CalcWeeklyResultsPythonEndpoint:
+      Description: CalcWeeklyResultsPython API Endpoint
+      Value: !Sub https://${MyHttpApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/calcWeeklyResults
+      Export:
+        Name: !Sub ${AWS::StackName}-CalcWeeklyResultsPythonEndpoint
     SetPoolStatusOpenFunction:
       Description: SetPoolStatus Lambda Function ARN
       Value: !GetAtt SetPoolStatusOpen.Arn
