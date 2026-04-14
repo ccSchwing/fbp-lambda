@@ -1,9 +1,8 @@
 {
-  "httpMethod": "POST",
-  "path": "/getFBPPicksPython",
+  "httpMethod": "GET",
+  "path": "/getPickSheet",
   "headers": {
     "Content-Type": "application/json"
   },
-  "body": "{\"email\": \"chuckschwing@proton.me\"}",
   "isBase64Encoded": false
 }

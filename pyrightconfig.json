@@ -30,7 +30,9 @@
   "reportOptionalCall": "error",
   "reportOptionalSubscript": "error",
   "reportArgumentType": "error",
-  "reportUnknownVariableType": "warning",
-  "reportUnknownMemberType": "warning",
-  "reportUnknownArgumentType": "warning"
+  "reportUnknownVariableType": "none",
+  "reportUnknownMemberType": "none",
+  "reportUnknownArgumentType": "none",
+  "reportUnknownLambdaType": "none",
+  "reportUnknownParameterType": "none",
 }

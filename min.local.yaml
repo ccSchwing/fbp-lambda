@@ -105,6 +105,41 @@ Resources:
             Method: OPTIONS
             PayloadFormatVersion: "2.0"
 
+  GetPickSheetPython:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/GetPickSheetPython/src/
+      Handler: GetPickSheet.lambda_handler
+      Runtime: python3.14
+      MemorySize: 1024
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FBPConfigTableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref FBPScheduleTableName
+      Environment:
+        Variables:
+          FBPConfigTableName: !Ref FBPConfigTableName
+          FBPScheduleTableName: !Ref FBPScheduleTableName
+      Layers: 
+        - !Ref FBPLibLayer
+      Events:
+        GetPickSheetGET:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyHttpApi
+            Path: /getPickSheet
+            Method: GET
+            PayloadFormatVersion: "2.0"
+        GetPickSheetOptions:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MyHttpApi
+            Path: /getPickSheet
+            Method: OPTIONS
+            PayloadFormatVersion: "2.0"
+   
+
   CalcWeeklyResultsPython:
     Type: AWS::Serverless::Function
     Properties:
@@ -834,6 +869,14 @@ Outputs:
       Value: !Ref MyHttpApi
       Export:
         Name: !Sub ${AWS::StackName}-HttpApiId
+    GetPickSheetPythonFunction:
+      Description: GetPickSheetPython Lambda Function ARN
+      Value: !GetAtt GetPickSheetPython.Arn
+    GetPickSheetPythonEndpoint:
+      Description: GetPickSheetPython API Endpoint
+      Value: !Sub https://${MyHttpApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/getPickSheet
+      Export:
+        Name: !Sub ${AWS::StackName}-GetPickSheetPythonEndpoint
     CalcWeeklyResultsPythonFunction:
       Description: CalcWeeklyResultsPython Lambda Function ARN
       Value: !GetAtt CalcWeeklyResultsPython.Arn
